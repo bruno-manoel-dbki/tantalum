@@ -73,7 +73,12 @@ img.show()
 
 #%% Same, but whitout pillow
 
-img = np.zeros(width,height)
+img = np.zeros((width,height)
+               
+               
+#%%
+#TODO: draw the boundaries in the jpg file
+
 
 
 
