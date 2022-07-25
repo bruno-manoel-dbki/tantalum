@@ -14,5 +14,5 @@ This project is to deal with properties of grain boundaries
 - [ ] Void Identification
 
 ## Requirements
-    See [Requirements](requirements.txt)
+See [Requirements](requirements.txt)
 
