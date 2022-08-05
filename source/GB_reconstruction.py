@@ -3,7 +3,13 @@
 
 import numpy as np
 import pandas as pd
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageOps
+from skimage import draw
+from matplotlib import pyplot as plt
+from matplotlib import cm
+
+
+
 
 
 #%%
@@ -55,7 +61,11 @@ rows = coordinates_array.shape[0]
 
 
 #%%
+'''
 
+    Drawing the image using pillow
+    
+'''
 img = Image.new("RGB", size = (width, height))
 #img.show()
 
@@ -72,13 +82,65 @@ img.show()
 
 
 #%% Same, but whitout pillow
+'''
 
-img = np.zeros((width,height)
-               
+    Drawing the image using numpy and scikit
+    
+'''
+np_img = np.zeros((width+1,height+1))
+for x in range(rows):
+    rr,cc = draw.line(coordinates_array[x][0],coordinates_array[x][1],coordinates_array[x][2],coordinates_array[x][3])
+    np_img[rr,cc] = 1
+
+#rr,cc = draw.line(0,0,100,100)
+#np_img = np.rot90(np_img)
+np_img = np.flip(np_img)
+plt.imshow(np_img,cmap= "Greys")
+ 
+#img2 = Image.fromarray(np_img*255)
+#img2.show()
+
+
+#%%
+'''
+    Inverting Image
+
+'''
+
+
+plt.imshow(1-np_img, cmap="Greys")
+
+
+img_invert = ImageOps.invert(img)
+img_invert.show()
+
+
                
 #%%
 #TODO: draw the boundaries in the jpg file
 
+
+'''
+
+    Drawing the image using pillow
+    
+'''
+img_jpg = Image.open("../data/1_001.jpg")
+img_jpg = img_jpg.resize((width,height))
+
+
+#img.show()
+
+img_jpg1 = ImageDraw.Draw(img_jpg)
+
+for x in range(rows):
+    
+    #print(coordinates_array[x])
+    img_jpg1.line(tuple(coordinates_array[x]),"white",1)
+    
+#img1.line((0,0,100,100),"white",1)
+#img.save(fp = "./001", format = "png")
+img_jpg.show()
 
 
 
