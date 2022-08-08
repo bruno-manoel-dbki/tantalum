@@ -165,6 +165,14 @@ def gb_reconstruction(sample: str):
 
 def draw_image(width: int, height: int, coordinates_array: np.ndarray ):
     
+    width = int(df.x_end.max())
+    height = int(df.y_end.max())
+    
+    coordinates = df[["x_start","y_start","x_end","y_end"]]
+    coordinates_array = coordinates.to_numpy()
+    
+    coordinates_array = (coordinates_array.astype(int))
+    
     gb_img = np.zeros((width+1,height+1))
     for row in coordinates_array:
         rr,cc = draw.line(row[0],row[1],row[2],row[3])
@@ -181,12 +189,14 @@ from matplotlib import pyplot as plt
 def main():
 
     
-    samples_list = open_gb_files(os.getcwd()+ "/data/")
+    samples_df = open_gb_files(os.getcwd()+ "/data/")
     gb_list = []
     #print(samples_list)
     for sample in samples_list:        
         #print(sample)
         if ".txt" in sample: 
+            width = int(df.x_end.max())
+            height = int(df.y_end.max())                   
             gb_image = gb_reconstruction(sample)
             gb_list.append(gb_image)
             
