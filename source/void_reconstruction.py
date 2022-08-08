@@ -102,7 +102,26 @@ def open_gb_files(path: str):
     
     samples_list = os.listdir(path)    
     
-    return samples_list
+    list_df = []
+    
+    for sample in samples_lsit
+    df = pd.DataFrame(  data = sample, 
+                        columns = ["right_phi1","right_PHI","right_phi2",                 #1-3
+                                   "left_phi1","left_PHI","left_phi2",                    #4-6 
+                                   "ori_angle",                                           #7
+                                   "right_ori_x","right_ori_y","right_ori_z",              #8-10
+                                   "left_ori_x","leff_ori_y","left_ori_z",                 #11-13  
+                                   "length",                                              #14
+                                   "trace_angle",                                         #15
+                                   "x_start", "y_start", "x_end", "y_end",                #16-19
+                                   "grain_right","grain_left"                             #20-21
+                                   ]                    
+                     )
+
+    
+        
+    
+    return list_df
 
 
 import numpy as np
@@ -129,22 +148,7 @@ def gb_reconstruction(sample: str):
     
     '''
     
-    
-    df = pd.DataFrame(  data = sample, 
-                        columns = ["right_phi1","right_PHI","right_phi2",                 #1-3
-                                   "left_phi1","left_PHI","left_phi2",                    #4-6 
-                                   "ori_angle",                                           #7
-                                   "right_ori_x","right_ori_y","right_ori_z",              #8-10
-                                   "left_ori_x","leff_ori_y","left_ori_z",                 #11-13  
-                                   "length",                                              #14
-                                   "trace_angle",                                         #15
-                                   "x_start", "y_start", "x_end", "y_end",                #16-19
-                                   "grain_right","grain_left"                             #20-21
-                                   ]                    
-                     )
 
-    
-        
     width = int(df.x_end.max())
     height = int(df.y_end.max())
     
