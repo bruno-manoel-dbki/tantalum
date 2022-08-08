@@ -6,7 +6,7 @@ import pandas as pd
 from PIL import Image, ImageDraw, ImageOps
 from skimage import draw
 from matplotlib import pyplot as plt
-from matplotlib import cm
+#from matplotlib import cm
 
 
 
