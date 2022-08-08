@@ -94,7 +94,9 @@ for x in range(rows):
 
 #rr,cc = draw.line(0,0,100,100)
 #np_img = np.rot90(np_img)
-np_img = np.flip(np_img)
+#np_img = np.flip(np_img)
+
+np_img = np.transpose(np_img)
 plt.imshow(np_img,cmap= "Greys")
  
 #img2 = Image.fromarray(np_img*255)
