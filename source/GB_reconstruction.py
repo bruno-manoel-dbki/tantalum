@@ -151,27 +151,28 @@ coordinates_array = coordinates.to_numpy()
 
 coordinates_array = (coordinates_array.astype(int))
 
-rows = coordinates_array.shape[0]
-
-
-
-
 
 #%% 
 '''
 
     Drawing the image using numpy and scikit
     
+    The 3rd dimension is an index of the boundarie, so after I can refer to the df.
+    TODO: create an ID in dataframe to avoid an order dependent reference
+    
 '''
-np_img = np.zeros((width+1,height+1))
-for x in range(rows):
-    rr,cc = draw.line(coordinates_array[x][0],coordinates_array[x][1],coordinates_array[x][2],coordinates_array[x][3])
-    np_img[rr,cc] = 255
+#np_img = np.zeros([width+1,height+1,3])
+np_img = np.zeros([height+1, width+1, 3])
+for idx, row in enumerate(coordinates_array):
+    rr,cc = draw.line(row[0],row[1],row[2],row[3])
+#    np_img[cc,rr,0:2] = [255, idx/3934*255]
+    np_img[cc,rr,0:2] = [255, idx]
 
 
-np_img = np.transpose(np_img)
+#np_img = np.transpose(np_img)
 plt.imshow(np_img)
- 
+
+
 #img2 = Image.fromarray(np_img*255)
 #img2.show()
 
@@ -182,7 +183,7 @@ plt.imshow(np_img)
 
 '''
 
-    Drawing the image using pillow
+    Drawing in jpg file using pillow
     
 '''
 path = '../data/'
@@ -195,10 +196,10 @@ img_jpg = img_jpg.resize((width,height))
 
 img_jpg1 = ImageDraw.Draw(img_jpg)
 
-for x in range(rows):
+for row in coordinates_array:
     
     #print(coordinates_array[x])
-    img_jpg1.line(tuple(coordinates_array[x]),"white",1)
+    img_jpg1.line(tuple(row),"white",1)
     
 #img1.line((0,0,100,100),"white",1)
 #img.save(fp = "./001", format = "png")
