@@ -8,6 +8,7 @@ from skimage import draw
 from matplotlib import pyplot as plt
 import cv2
 import os
+import math
 #from matplotlib import cm
 
 
@@ -110,10 +111,9 @@ def find_voids(pa_pic, maxarea):
 #%%
 
 
-def find_voids_2(pa_pic, maxarea):
+def find_voids_2(original):
 	### Read image
-    
-    original = pa_pic
+
 	
 	### Save temp file for comparison
 	#cv2.imwrite(picname+"_original.png", original)
@@ -147,7 +147,7 @@ def find_voids_2(pa_pic, maxarea):
 
 	
 	### Load bakcground image for contour plot
-    drawing = pa_pic
+    drawing = original
 
 	### Get height of the picture to set up an approximate area (height*height)
     vheight = len(drawing)
@@ -157,9 +157,9 @@ def find_voids_2(pa_pic, maxarea):
 	
     for contour in contours:
         area = cv2.contourArea(contour)
-		### there is one contour that contains all others (perimeter of image), filter it out
-		### do not run the rest of the loop, jump straight to next contour
-        if area > maxarea:
+		### there is one contour that contains all others (perimeter of image), filter it out considering 80% of full image size
+ 		### do not run the rest of the loop, jump straight to next contour
+        if area > (original.size*0.8):
                 continue
 		
 		### bound contour with a rectangle. 	
@@ -264,7 +264,7 @@ for idx, row in enumerate(coordinates_array):
 #    np_img[cc,rr,0:2] = [255, idx/3934*255]
     
 #    np_img[cc,rr,0:2] = [1, idx/3934]
-    np_img[cc,rr,0:2] = [1, idx]
+    np_img[cc,rr,0:2] = [1, idx+1]
 
 
 #np_img = np.transpose(np_img)
@@ -307,10 +307,11 @@ gb_img = cv2.imread(path+sample, 0)
 gb_img = cv2.resize(gb_img,(width,height),interpolation = cv2.INTER_AREA)
 
 
-
 #centers, radii, vheight, image, drawing = find_voids('temp.jpg',3000)
 #centers, radii, vheight, image, drawing = find_voids(path + sample ,3000)
-centers, radii, vheight, image, drawing = find_voids_2(gb_img,3000)
+
+#Find all 
+centers, radii, vheight, image, drawing = find_voids_2(gb_img)
 
 plt.imshow(drawing)
 
@@ -320,15 +321,52 @@ plt.imshow(drawing)
 cv2.imwrite('temp.jpg',np_img)
 #img = cv2.cvtColor(np_img.astype('uint16'), cv2.COLOR_GRAY2BGR)
 img = cv2.imread('temp.jpg')
-#os.remove("temp.jpg")
-#cv2.waitKey()
+os.remove("temp.jpg")
+
 for center, rad in zip(centers, radii):
     cv2.circle(img,center,int(rad),(255,5,255), 5)
+
+
 
 
 cv2.imshow("image",img)
 cv2.waitKey()
 cv2.destroyAllWindows()
 
+#%%
+#
+# 
+#
+radi_0 = radii[5]
+center_0 = centers[5]
+radi_0 = round(radi_0*4)
+
+x_size = radi_0*2
+y_size = radi_0*2
+
+x_origin, y_origin = center_0[0] - radi_0 , center_0[1] - radi_0 
+x_end, y_end = center_0[0] + radi_0 , center_0[1] + radi_0 
+
+void = np_img
+#void = cv2.rectangle(np_img,(x_origin,y_origin),(x_end,y_end), 1, 1)
+
+#void_0 = np.zeros([over_circle, over_circle , 3])
+void_0 = void[y_origin : y_end , x_origin : x_end]
 
 
+mask = np.zeros([x_size,y_size], dtype="uint8")
+cv2.circle(mask, [radi_0,radi_0], radi_0, 255, -1)
+masked = cv2.bitwise_and(void_0,void_0, mask=mask)
+
+
+np.unique(void_0[:,:,1])
+plt.imshow(void_0)
+#plt.imshow(np_img)
+plt.show()
+#%%
+
+kernel = np.ones((1, 5), np.uint8)
+
+img_dilation = cv2.dilate(void_0, kernel, iterations=1)
+
+plt.imshow(img_dilation)
