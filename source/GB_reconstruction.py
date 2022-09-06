@@ -328,7 +328,6 @@ for center, rad in zip(centers, radii):
 
 
 
-
 cv2.imshow("image",img)
 cv2.waitKey()
 cv2.destroyAllWindows()
@@ -339,15 +338,15 @@ cv2.destroyAllWindows()
 #
 radi_0 = radii[5]
 center_0 = centers[5]
-radi_0 = round(radi_0*4)
+radi_0 = round(radi_0*1.25)
 
 x_size = radi_0*2
 y_size = radi_0*2
 
 x_origin, y_origin = center_0[0] - radi_0 , center_0[1] - radi_0 
 x_end, y_end = center_0[0] + radi_0 , center_0[1] + radi_0 
-
-void = np_img
+void = 0
+void = np_img.copy()
 #void = cv2.rectangle(np_img,(x_origin,y_origin),(x_end,y_end), 1, 1)
 
 #void_0 = np.zeros([over_circle, over_circle , 3])
@@ -358,15 +357,58 @@ mask = np.zeros([x_size,y_size], dtype="uint8")
 cv2.circle(mask, [radi_0,radi_0], radi_0, 255, -1)
 masked = cv2.bitwise_and(void_0,void_0, mask=mask)
 
+void_masked = masked
 
 np.unique(void_0[:,:,1])
-plt.imshow(void_0)
-#plt.imshow(np_img)
+plt.figure()
+#plt.imshow(void_0)
+plt.imshow(void)
 plt.show()
-#%%
 
-kernel = np.ones((1, 5), np.uint8)
 
-img_dilation = cv2.dilate(void_0, kernel, iterations=1)
 
-plt.imshow(img_dilation)
+gray = cv2.cvtColor(void_0.astype('uint8'),cv2.COLOR_BGR2GRAY)
+
+
+# edges = cv2.Canny(gray,50,150,apertureSize = 3)
+
+void_line = void_masked.copy()
+
+lines = cv2.HoughLines(gray,1,math.pi/360,2)
+
+# Draw lines on the image
+for r_theta in lines:
+    arr = np.array(r_theta[0], dtype=np.float64)
+    r, theta = arr
+    # Stores the value of cos(theta) in a
+    a = np.cos(theta)
+ 
+    # Stores the value of sin(theta) in b
+    b = np.sin(theta)
+ 
+    # x0 stores the value rcos(theta)
+    x0 = a*r
+ 
+    # y0 stores the value rsin(theta)
+    y0 = b*r
+ 
+    # x1 stores the rounded off value of (rcos(theta)-1000sin(theta))
+    x1 = int(x0 + 1000*(-b))
+ 
+    # y1 stores the rounded off value of (rsin(theta)+1000cos(theta))
+    y1 = int(y0 + 1000*(a))
+ 
+    # x2 stores the rounded off value of (rcos(theta)+1000sin(theta))
+    x2 = int(x0 - 1000*(-b))
+ 
+    # y2 stores the rounded off value of (rsin(theta)-1000cos(theta))
+    y2 = int(y0 - 1000*(a))
+ 
+    # cv2.line draws a line in img from the point(x1,y1) to (x2,y2).
+    # (0,0,255) denotes the colour of the line to be
+    # drawn. In this case, it is red.
+    cv2.line(void_0, (x1, y1), (x2, y2), (255, 0, 0), 1)
+# Show result
+plt.figure()
+plt.imshow(void_0)
+plt.show()
