@@ -239,19 +239,19 @@ df = pd.DataFrame(  data = sample1,
 #%%
 # Creating image
 
-width = int(df.x_end.max())
-height = int(df.y_end.max())
+
+# To increase the image resolution just multiply width, height and 
+# coordinates_array (before casting) by the necessary increase. 
+
+
+width = int(df.x_end.max()) #multply here
+height = int(df.y_end.max()) #multply here
 
 coordinates = df[["x_start","y_start","x_end","y_end"]]
-coordinates_array = coordinates.to_numpy()
-
+coordinates_array = coordinates.to_numpy() #multply here
 coordinates_array = (coordinates_array.astype(int))
 
 
-#%%
-
-for idx, row in enumerate(coordinates):
-    print(row)
 
 
 #%% 
@@ -279,6 +279,38 @@ plt.imshow(np_img)
 
 #img2 = Image.fromarray(np_img*255)
 #img2.show()
+
+#%%
+
+'''
+
+    Drawing the image 
+    
+    The image can be described as a binary matrix, but we need to 
+  improve the description in it, so we add a new dimension defined
+  with a combination of right and left grain
+  
+  Using the information from dataset, we create an index for each boundary.
+  It's not possible to index with dataset because each element describes
+  a line, but we can have a lot of lines in a boundary. To contour this 
+  situation is necessary to refer the index to grain around the boundaries
+    
+    
+'''
+
+bd_info = df[["x_start","y_start","x_end","y_end", "grain_left", "grain_right"]]
+bd_info = bd_info.astype('int32')
+
+
+
+bd_unique =bd_info[["grain_left", "grain_right"]].drop_duplicates()
+
+bd_unique = bd_unique.reset_index(drop = True)
+
+
+bd_unique["neighbor"] = list(zip(bd_unique.grain_left,bd_unique.grain_right))
+for idx, row in enumerate(coordinates):
+    print(row)
 
 
 #%%
