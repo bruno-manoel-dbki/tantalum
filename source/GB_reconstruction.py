@@ -248,6 +248,12 @@ coordinates_array = coordinates.to_numpy()
 coordinates_array = (coordinates_array.astype(int))
 
 
+#%%
+
+for idx, row in enumerate(coordinates):
+    print(row)
+
+
 #%% 
 '''
 
@@ -264,7 +270,7 @@ for idx, row in enumerate(coordinates_array):
 #    np_img[cc,rr,0:2] = [255, idx/3934*255]
     
 #    np_img[cc,rr,0:2] = [1, idx/3934]
-    np_img[cc,rr,0:2] = [1, idx+1]
+    np_img[cc,rr,0:2] = [1, idx]
 
 
 #np_img = np.transpose(np_img)
@@ -334,40 +340,83 @@ cv2.destroyAllWindows()
 
 #%%
 #
-# 
-#
-radi_0 = radii[5]
-center_0 = centers[5]
-radi_0 = round(radi_0*1.25)
+# 1 ->
+# 2 ->
+# 3 -> to much
+# 4 -> 7
+# 5 -> 2 boundaries
+# 6 -> 0 boundaries
+# 7 
+# 8
+# 9 -> 4
+# 10 ->
 
-x_size = radi_0*2
-y_size = radi_0*2
+font = cv2.FONT_HERSHEY_SIMPLEX
 
-x_origin, y_origin = center_0[0] - radi_0 , center_0[1] - radi_0 
-x_end, y_end = center_0[0] + radi_0 , center_0[1] + radi_0 
-void = 0
+
+
+num = 0
+bd_inside_mask = []
+
 void = np_img.copy()
-#void = cv2.rectangle(np_img,(x_origin,y_origin),(x_end,y_end), 1, 1)
 
-#void_0 = np.zeros([over_circle, over_circle , 3])
-void_0 = void[y_origin : y_end , x_origin : x_end]
+for num in range(len(centers)):
+        
+    radi_0 = radii[num]
+    center_0 = centers[num]
+    radi_0 = round(radi_0*1.1)
+    
+    x_size = radi_0*2
+    y_size = radi_0*2
+    
+    x_origin, y_origin = center_0[0] - radi_0 , center_0[1] - radi_0 
+    x_end, y_end = center_0[0] + radi_0 , center_0[1] + radi_0 
+    
+
+    cv2.rectangle(void,(x_origin,y_origin),(x_end,y_end), 1, 1)
+    
+    cv2.putText(void, str(num), (x_origin,y_origin), font, 1, (255,0, 0), 2, cv2.LINE_AA)
+    
+    
+    
+    void_0 = void[y_origin : y_end , x_origin : x_end]
+    mask = np.zeros([x_size,y_size], dtype="uint8")
+    cv2.circle(mask, [radi_0,radi_0], radi_0, 255, -1)
+    masked = cv2.bitwise_and(void_0,void_0, mask=mask)
+    
+    void_masked = masked
+    
+
+    bd_inside_mask.insert(num,np.unique(void_masked[:,:,1]))
 
 
-mask = np.zeros([x_size,y_size], dtype="uint8")
-cv2.circle(mask, [radi_0,radi_0], radi_0, 255, -1)
-masked = cv2.bitwise_and(void_0,void_0, mask=mask)
+print(bd_inside_mask)
 
-void_masked = masked
-
-np.unique(void_0[:,:,1])
 plt.figure()
-#plt.imshow(void_0)
 plt.imshow(void)
+#plt.imshow(np_img)
 plt.show()
 
 
 
-gray = cv2.cvtColor(void_0.astype('uint8'),cv2.COLOR_BGR2GRAY)
+#%%
+
+
+
+tuples_start = [np.array(x) for x in df[["x_start","y_start"]].iloc[[2583, 2473]].to_numpy()]
+tuples_end = [np.array(x) for x in df[["x_end","y_end"]].iloc[[2583, 2473]].to_numpy()]
+
+cv2.line(void, tuples_start[0].astype(int), tuples_end[1].astype(int), (255, 0, 0), 1)
+
+plt.figure()
+plt.imshow(void)
+#plt.imshow(np_img)
+plt.show()
+
+
+
+#%%
+gray = cv2.cvtColor(void_masked.astype('uint8'),cv2.COLOR_BGR2GRAY)
 
 
 # edges = cv2.Canny(gray,50,150,apertureSize = 3)
@@ -410,5 +459,5 @@ for r_theta in lines:
     cv2.line(void_0, (x1, y1), (x2, y2), (255, 0, 0), 1)
 # Show result
 plt.figure()
-plt.imshow(void_0)
+plt.imshow(void)
 plt.show()
