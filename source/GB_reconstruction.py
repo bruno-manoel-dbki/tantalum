@@ -244,8 +244,8 @@ df = pd.DataFrame(  data = sample1,
 # coordinates_array (before casting) by the necessary increase. 
 
 
-width = int(df.x_end.max()) #multply here
-height = int(df.y_end.max()) #multply here
+width = int(df.x_end.max())+1 #multply here
+height = int(df.y_end.max())+1 #multply here
 
 coordinates = df[["x_start","y_start","x_end","y_end"]]
 coordinates_array = coordinates.to_numpy() #multply here
@@ -264,7 +264,7 @@ coordinates_array = (coordinates_array.astype(int))
     
 '''
 #np_img = np.zeros([width+1,height+1,3])
-np_img = np.zeros([height+1, width+1, 3])
+np_img = np.zeros([height, width, 3])
 for idx, row in enumerate(coordinates_array):
     rr,cc = draw.line(row[0],row[1],row[2],row[3])
 #    np_img[cc,rr,0:2] = [255, idx/3934*255]
@@ -298,20 +298,41 @@ plt.imshow(np_img)
     
 '''
 
-bd_info = df[["x_start","y_start","x_end","y_end", "grain_left", "grain_right"]]
+bd_info = df[["x_start","y_start","x_end","y_end", "grain_left", "grain_right"]].copy()
 bd_info = bd_info.astype('int32')
 
 
 
 bd_unique =bd_info[["grain_left", "grain_right"]].drop_duplicates()
 
-bd_unique = bd_unique.reset_index(drop = True)
+bd_unique = bd_unique.reset_index()
 
 
-bd_unique["neighbor"] = list(zip(bd_unique.grain_left,bd_unique.grain_right))
-for idx, row in enumerate(coordinates):
-    print(row)
+#%%
 
+bd_info["bd_index"] = None
+bd_info.loc[bd_unique["index"],"bd_index"]= bd_unique.index
+match = pd.DataFrame()
+for idx,info_row in bd_info[bd_info.bd_index.isnull()].iterrows():
+    match = bd_unique.loc[
+                        (info_row["grain_left"]== bd_unique["grain_left"])
+                        & 
+                        (info_row["grain_right"] == bd_unique[ "grain_right"])
+                        ]
+    bd_info.loc[idx,"bd_index"] = match.index.item()
+    
+
+
+
+np_img = np.zeros([height+1, width+1, 3])
+for idx, row in bd_info.iterrows():
+    rr,cc = draw.line(row[0],row[1],row[2],row[3])
+
+    np_img[cc,rr,0] = row.bd_index
+
+
+#np_img = np.transpose(np_img)
+plt.imshow(np_img)
 
 #%%
 #TODO: draw the boundaries in the jpg file
@@ -356,19 +377,19 @@ plt.imshow(drawing)
 #%%
 
 
-cv2.imwrite('temp.jpg',np_img)
-#img = cv2.cvtColor(np_img.astype('uint16'), cv2.COLOR_GRAY2BGR)
-img = cv2.imread('temp.jpg')
-os.remove("temp.jpg")
+# cv2.imwrite('temp.jpg',np_img)
+# #img = cv2.cvtColor(np_img.astype('uint16'), cv2.COLOR_GRAY2BGR)
+# img = cv2.imread('temp.jpg')
+# os.remove("temp.jpg")
 
-for center, rad in zip(centers, radii):
-    cv2.circle(img,center,int(rad),(255,5,255), 5)
+# for center, rad in zip(centers, radii):
+#     cv2.circle(img,center,int(rad),(255,5,255), 5)
 
 
 
-cv2.imshow("image",img)
-cv2.waitKey()
-cv2.destroyAllWindows()
+# cv2.imshow("image",img)
+# cv2.waitKey()
+# cv2.destroyAllWindows()
 
 #%%
 #
@@ -392,11 +413,12 @@ bd_inside_mask = []
 
 void = np_img.copy()
 
-for num in range(len(centers)):
+for num in [0]:
+# for num in range(len(centers)):
         
     radi_0 = radii[num]
     center_0 = centers[num]
-    radi_0 = round(radi_0*1.1)
+    radi_0 = round(radi_0*1)
     
     x_size = radi_0*2
     y_size = radi_0*2
@@ -411,7 +433,7 @@ for num in range(len(centers)):
     
     
     
-    void_0 = void[y_origin : y_end , x_origin : x_end]
+    void_0 = np_img[y_origin : y_end , x_origin : x_end].copy()
     mask = np.zeros([x_size,y_size], dtype="uint8")
     cv2.circle(mask, [radi_0,radi_0], radi_0, 255, -1)
     masked = cv2.bitwise_and(void_0,void_0, mask=mask)
@@ -419,7 +441,7 @@ for num in range(len(centers)):
     void_masked = masked
     
 
-    bd_inside_mask.insert(num,np.unique(void_masked[:,:,1]))
+    bd_inside_mask.insert(num,np.unique(void_masked[:,:,0]))
 
 
 print(bd_inside_mask)
@@ -435,10 +457,10 @@ plt.show()
 
 
 
-tuples_start = [np.array(x) for x in df[["x_start","y_start"]].iloc[[2583, 2473]].to_numpy()]
-tuples_end = [np.array(x) for x in df[["x_end","y_end"]].iloc[[2583, 2473]].to_numpy()]
+tuples_start = [np.array(x) for x in df[["x_start","y_start"]].iloc[[1890 +1, 1900 +1]].to_numpy()]
+tuples_end = [np.array(x) for x in df[["x_end","y_end"]].iloc[[1890 +1, 1900 +1]].to_numpy()]
 
-cv2.line(void, tuples_start[0].astype(int), tuples_end[1].astype(int), (255, 0, 0), 1)
+cv2.line(void, tuples_start[0].astype(int), tuples_end[1].astype(int), (0, 255, 0), 1)
 
 plt.figure()
 plt.imshow(void)
@@ -447,49 +469,49 @@ plt.show()
 
 
 
-#%%
-gray = cv2.cvtColor(void_masked.astype('uint8'),cv2.COLOR_BGR2GRAY)
+# #%%
+# gray = cv2.cvtColor(void_masked.astype('uint8'),cv2.COLOR_BGR2GRAY)
 
 
-# edges = cv2.Canny(gray,50,150,apertureSize = 3)
+# # edges = cv2.Canny(gray,50,150,apertureSize = 3)
 
-void_line = void_masked.copy()
+# void_line = void_masked.copy()
 
-lines = cv2.HoughLines(gray,1,math.pi/360,2)
+# lines = cv2.HoughLines(gray,1,math.pi/360,2)
 
-# Draw lines on the image
-for r_theta in lines:
-    arr = np.array(r_theta[0], dtype=np.float64)
-    r, theta = arr
-    # Stores the value of cos(theta) in a
-    a = np.cos(theta)
+# # Draw lines on the image
+# for r_theta in lines:
+#     arr = np.array(r_theta[0], dtype=np.float64)
+#     r, theta = arr
+#     # Stores the value of cos(theta) in a
+#     a = np.cos(theta)
  
-    # Stores the value of sin(theta) in b
-    b = np.sin(theta)
+#     # Stores the value of sin(theta) in b
+#     b = np.sin(theta)
  
-    # x0 stores the value rcos(theta)
-    x0 = a*r
+#     # x0 stores the value rcos(theta)
+#     x0 = a*r
  
-    # y0 stores the value rsin(theta)
-    y0 = b*r
+#     # y0 stores the value rsin(theta)
+#     y0 = b*r
  
-    # x1 stores the rounded off value of (rcos(theta)-1000sin(theta))
-    x1 = int(x0 + 1000*(-b))
+#     # x1 stores the rounded off value of (rcos(theta)-1000sin(theta))
+#     x1 = int(x0 + 1000*(-b))
  
-    # y1 stores the rounded off value of (rsin(theta)+1000cos(theta))
-    y1 = int(y0 + 1000*(a))
+#     # y1 stores the rounded off value of (rsin(theta)+1000cos(theta))
+#     y1 = int(y0 + 1000*(a))
  
-    # x2 stores the rounded off value of (rcos(theta)+1000sin(theta))
-    x2 = int(x0 - 1000*(-b))
+#     # x2 stores the rounded off value of (rcos(theta)+1000sin(theta))
+#     x2 = int(x0 - 1000*(-b))
  
-    # y2 stores the rounded off value of (rsin(theta)-1000cos(theta))
-    y2 = int(y0 - 1000*(a))
+#     # y2 stores the rounded off value of (rsin(theta)-1000cos(theta))
+#     y2 = int(y0 - 1000*(a))
  
-    # cv2.line draws a line in img from the point(x1,y1) to (x2,y2).
-    # (0,0,255) denotes the colour of the line to be
-    # drawn. In this case, it is red.
-    cv2.line(void_0, (x1, y1), (x2, y2), (255, 0, 0), 1)
-# Show result
-plt.figure()
-plt.imshow(void)
-plt.show()
+#     # cv2.line draws a line in img from the point(x1,y1) to (x2,y2).
+#     # (0,0,255) denotes the colour of the line to be
+#     # drawn. In this case, it is red.
+#     cv2.line(void_0, (x1, y1), (x2, y2), (255, 0, 0), 1)
+# # Show result
+# plt.figure()
+# plt.imshow(void)
+# plt.show()
