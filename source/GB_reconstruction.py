@@ -310,7 +310,7 @@ font = cv2.FONT_HERSHEY_SIMPLEX
 
 
 
-num = 5
+num = 0
 bd_inside_mask = []
 
 void = np_img.copy()
@@ -325,17 +325,17 @@ for num in [num]:
     x_size = radi_0*2
     y_size = radi_0*2
     
-    x_origin, y_origin = center_0[0] - radi_0 , center_0[1] - radi_0 
+    x_start, y_start = center_0[0] - radi_0 , center_0[1] - radi_0 
     x_end, y_end = center_0[0] + radi_0 , center_0[1] + radi_0 
     
 
-    cv2.rectangle(void,(x_origin,y_origin),(x_end,y_end), (0,255,0), 1)
+    cv2.rectangle(void,(x_start,y_start),(x_end,y_end), (0,255,0), 1)
     
-    cv2.putText(void, str(num), (x_origin,y_origin), font, 1, (0,255, 0), 2, cv2.LINE_AA)
+    cv2.putText(void, str(num), (x_start,y_start), font, 1, (0,255, 0), 2, cv2.LINE_AA)
     
     
     
-    void_0 = np_img[y_origin : y_end , x_origin : x_end].copy()
+    void_0 = np_img[y_start : y_end , x_start : x_end]
     mask = np.zeros([x_size,y_size], dtype="uint8")
     cv2.circle(mask, [radi_0,radi_0], radi_0, 255, -1)
     masked = cv2.bitwise_and(void_0,void_0, mask=mask)
@@ -343,8 +343,15 @@ for num in [num]:
     void_masked = masked
     
 
-    bd_inside_mask.insert(num,np.unique(void_masked[:,:,0]))
+    bd_inside_mask= np.unique(void_masked[:,:,0]).tolist()
+    
+    if 0 in bd_inside_mask:
+        bd_inside_mask.remove(0)
+    
+    tuples_start = [np.array(x) for x in bd_info[["x_start","y_start"]][(bd_info["bd_index"].isin(bd_inside_mask))].to_numpy()]
+    tuples_end = [np.array(x) for x in bd_info[["x_end","y_end"]][(bd_info["bd_index"].isin(bd_inside_mask))].to_numpy()]
 
+    cv2.line(void, tuples_end[0].astype(int), tuples_start[1].astype(int), (0, 255, 0), 1)
 
 print(bd_inside_mask)
 
@@ -353,23 +360,8 @@ plt.imshow(void)
 #plt.imshow(np_img)
 plt.show()
 
+bd_info[(bd_info["x_start"]>x_start) &(bd_info["x_start"]<x_end) & (bd_info["y_start"]>y_start) &(bd_info["y_start"]<y_end)]
 
-
-#%%
-
-
-bd_1 = 2242 
-bd_2 = 2242
-
-tuples_start = [np.array(x) for x in bd_info[["x_start","y_start"]].loc[(bd_info["bd_index"] == bd_1) | (bd_info["bd_index"] == bd_2)].to_numpy()]
-tuples_end = [np.array(x) for x in bd_info[["x_end","y_end"]].loc[(bd_info["bd_index"] == bd_1) | (bd_info["bd_index"] == bd_2)].to_numpy()]
-
-cv2.line(void, tuples_end[0].astype(int), tuples_end[1].astype(int), (0, 255, 0), 1)
-
-plt.figure()
-plt.imshow(void)
-#plt.imshow(np_img)
-plt.show()
 
 
 
