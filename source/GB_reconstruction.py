@@ -15,102 +15,6 @@ import math
 #%%
 
 
-def find_voids(pa_pic, maxarea):
-	### Read image
-    print(os.getcwd())
-    original = cv2.imread(pa_pic, 0)
-	
-	### Save temp file for comparison
-	#cv2.imwrite(picname+"_original.png", original)
-	
-	### Run several filter over image to achieve a more distinct void structure.
-	### Voids will be more of a round shape this way, which reduces error.
-	### Depending on grain structure, some filters may have no effect on particular samples.
-    original = cv2.bilateralFilter(original,9,75,75)
-    
-    #%%
-	#original = cv2.medianBlur(original,5)
-	#original = cv2.GaussianBlur(original,(5,5),0)
-	
-	### TO CHANGE:
-	### Determine treshold for binary image. First value is gray-value used for cut-off, second is white.
-    retval, image = cv2.threshold(original, 60, 255, cv2.THRESH_BINARY)
-
-	#%%
-	### Find eliptical shapes with a minimum size and dilate picutre
-    #el = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (1, 1))
-    #image = cv2.dilate(image, el, iterations=1)
-
-	### Save picture temporarily for comparison
-	#cv2.imwrite(pa_pic+"_dilated.png", image)
-	#cv2.imshow('dilated', image)
-	
-	### Read contours from dilated binary picture
-    contours, hierarchy = cv2.findContours(image,
-	    cv2.RETR_LIST,
-	    cv2.CHAIN_APPROX_SIMPLE
-	) ### Simplify contour 
-
-	
-	### Load bakcground image for contour plot
-    drawing = cv2.imread(pa_pic)
-#%%
-	### Get height of the picture to set up an approximate area (height*height)
-    vheight = len(drawing)
-	
-    centers = []
-    radii = []
-	
-    for contour in contours:
-        area = cv2.contourArea(contour)
-		### there is one contour that contains all others (perimeter of image), filter it out
-		### do not run the rest of the loop, jump straight to next contour
-        if area > maxarea:
-                continue
-		
-		### bound contour with a rectangle. 	
-        br = cv2.boundingRect(contour)
-		
-		#el2 = cv2.fitEllipse(contour)
-
-		### TO CHANGE:
-		### Determine radius of circle by taking half of a side (which one??) 
-		### of the bounding Rectangle, then multiply by a factor if desired to make 
-		### up for mismatch due to color treshold in line 14.
-        radius = (br[2]/2)*1.4
-        radii.append(radius)
-		
-		### Find moments of countour
-        m = cv2.moments(contour)
-		
-		### Avoid error due to division by zero
-        if m['m00'] == 0.0:
-            m['m00'] = 1.0
-					
-        center = (int(m['m10'] / m['m00']), int(m['m01'] / m['m00']))
-        centers.append(center)
-		#cv2.circle(drawing, center, 3, (255, 0, 0), -1)
-        cv2.circle(drawing, center, int(radius), (0, 0, 255), 3)
-	
-    print("The program has detected {} voids".format(len(centers)))
-	
-    i = 0
-    for center in centers:
-        cv2.circle(drawing, center, 3, (255, 0, 0), -1)
-        cv2.circle(drawing, center, int(radii[i]), (0, 255, 0), 1)
-        i = i + 1
-
-	### Save image with recognized voids
-   # cv2.imwrite("_drawing.png", drawing)
-   # cv2.imshow('finished', drawing)
-   # cv2.waitKey()
-   # cv2.destroyAllWindows()
-    	
-    return centers, radii, vheight, image, drawing
-
-#%%
-
-
 def find_voids_2(original):
 	### Read image
 
@@ -241,20 +145,16 @@ df = pd.DataFrame(  data = sample1,
 
 
 # To increase the image resolution just multiply width, height and 
-# coordinates_array (before casting) by the necessary increase. 
+# coordinates_array and bd_info (before casting) by the necessary increase. 
+# 
 
 
 width = int(df.x_end.max())+1 #multply here
 height = int(df.y_end.max())+1 #multply here
 
-coordinates = df[["x_start","y_start","x_end","y_end"]]
-coordinates_array = coordinates.to_numpy() #multply here
-coordinates_array = (coordinates_array.astype(int))
 
+#%%
 
-
-
-#%% 
 '''
 
     Drawing the image using numpy and scikit
@@ -263,22 +163,24 @@ coordinates_array = (coordinates_array.astype(int))
     TODO: create an ID in dataframe to avoid an order dependent reference
     
 '''
-#np_img = np.zeros([width+1,height+1,3])
-np_img = np.zeros([height, width, 3])
-for idx, row in enumerate(coordinates_array):
-    rr,cc = draw.line(row[0],row[1],row[2],row[3])
-#    np_img[cc,rr,0:2] = [255, idx/3934*255]
+
+
+# #np_img = np.zeros([width+1,height+1,3])
+# np_img = np.zeros([height, width, 3])
+# for idx, row in enumerate(coordinates_array):
+#     rr,cc = draw.line(row[0],row[1],row[2],row[3])
+# #    np_img[cc,rr,0:2] = [255, idx/3934*255]
     
-#    np_img[cc,rr,0:2] = [1, idx/3934]
-    np_img[cc,rr,0:2] = [1, idx]
+# #    np_img[cc,rr,0:2] = [1, idx/3934]
+#     np_img[cc,rr,0:2] = [1, idx]
 
 
-#np_img = np.transpose(np_img)
-plt.imshow(np_img)
+# #np_img = np.transpose(np_img)
+# plt.imshow(np_img)
 
 
-#img2 = Image.fromarray(np_img*255)
-#img2.show()
+# #img2 = Image.fromarray(np_img*255)
+# #img2.show()
 
 #%%
 
@@ -298,7 +200,7 @@ plt.imshow(np_img)
     
 '''
 
-bd_info = df[["x_start","y_start","x_end","y_end", "grain_left", "grain_right"]].copy()
+bd_info = df[["x_start","y_start","x_end","y_end", "grain_left", "grain_right"]].copy() # if want to increase resolution, multiply here
 bd_info = bd_info.astype('int32')
 
 
@@ -335,18 +237,23 @@ for idx, row in bd_info.iterrows():
 plt.imshow(np_img)
 
 #%%
-#TODO: draw the boundaries in the jpg file
-
 
 '''
 
-    Save in jpg file using pillow
+   Write bindary boundaries in jpg image
     
 '''
 path = '../data/'
 sample = "1_001.jpg"
 img_jpg = Image.open(path+sample)
 img_jpg = img_jpg.resize((width,height))
+
+
+
+coordinates = df[["x_start","y_start","x_end","y_end"]]
+coordinates_array = coordinates.to_numpy() #multply here
+coordinates_array = (coordinates_array.astype(int))
+
 
 
 img_jpg1 = ImageDraw.Draw(img_jpg)
@@ -365,11 +272,6 @@ img_jpg.show()
 gb_img = cv2.imread(path+sample, 0)
 gb_img = cv2.resize(gb_img,(width,height),interpolation = cv2.INTER_AREA)
 
-
-#centers, radii, vheight, image, drawing = find_voids('temp.jpg',3000)
-#centers, radii, vheight, image, drawing = find_voids(path + sample ,3000)
-
-#Find all 
 centers, radii, vheight, image, drawing = find_voids_2(gb_img)
 
 plt.imshow(drawing)
@@ -408,12 +310,12 @@ font = cv2.FONT_HERSHEY_SIMPLEX
 
 
 
-num = 0
+num = 5
 bd_inside_mask = []
 
 void = np_img.copy()
 
-for num in [0]:
+for num in [num]:
 # for num in range(len(centers)):
         
     radi_0 = radii[num]
@@ -427,9 +329,9 @@ for num in [0]:
     x_end, y_end = center_0[0] + radi_0 , center_0[1] + radi_0 
     
 
-    cv2.rectangle(void,(x_origin,y_origin),(x_end,y_end), 1, 1)
+    cv2.rectangle(void,(x_origin,y_origin),(x_end,y_end), (0,255,0), 1)
     
-    cv2.putText(void, str(num), (x_origin,y_origin), font, 1, (255,0, 0), 2, cv2.LINE_AA)
+    cv2.putText(void, str(num), (x_origin,y_origin), font, 1, (0,255, 0), 2, cv2.LINE_AA)
     
     
     
@@ -456,11 +358,13 @@ plt.show()
 #%%
 
 
+bd_1 = 2242 
+bd_2 = 2242
 
-tuples_start = [np.array(x) for x in df[["x_start","y_start"]].iloc[[1890 +1, 1900 +1]].to_numpy()]
-tuples_end = [np.array(x) for x in df[["x_end","y_end"]].iloc[[1890 +1, 1900 +1]].to_numpy()]
+tuples_start = [np.array(x) for x in bd_info[["x_start","y_start"]].loc[(bd_info["bd_index"] == bd_1) | (bd_info["bd_index"] == bd_2)].to_numpy()]
+tuples_end = [np.array(x) for x in bd_info[["x_end","y_end"]].loc[(bd_info["bd_index"] == bd_1) | (bd_info["bd_index"] == bd_2)].to_numpy()]
 
-cv2.line(void, tuples_start[0].astype(int), tuples_end[1].astype(int), (0, 255, 0), 1)
+cv2.line(void, tuples_end[0].astype(int), tuples_end[1].astype(int), (0, 255, 0), 1)
 
 plt.figure()
 plt.imshow(void)
@@ -469,7 +373,7 @@ plt.show()
 
 
 
-# #%%
+#%%
 # gray = cv2.cvtColor(void_masked.astype('uint8'),cv2.COLOR_BGR2GRAY)
 
 
