@@ -3,12 +3,10 @@
 
 import numpy as np
 import pandas as pd
-from PIL import Image, ImageDraw, ImageOps
 from skimage import draw
 from matplotlib import pyplot as plt
 import cv2
-import os
-import math
+
 #from matplotlib import cm
 
 
@@ -110,7 +108,7 @@ def find_voids_2(original):
 
 #%%
 
-file = "../data/1_002"
+file = "../data/1_007"
 
 #%%
 
@@ -186,110 +184,7 @@ height = int(df.y_end.max())+1 #multply here
 # #img2 = Image.fromarray(np_img*255)
 # #img2.show()
 
-#%%
 
-#---------------------------------------#
-#                                       #
-#                   TO DROP             #
-#                                       #
-#                                       #
-#---------------------------------------#
-
-# '''
-
-#     Drawing the image 
-    
-#     The image can be described as a binary matrix, but we need to 
-#   improve the description in it, so we add a new dimension defined
-#   with a combination of right and left grain
-  
-#   Using the information from dataset, we create an index for each boundary.
-#   It's not possible to index with dataset because each element describes
-#   a line, but we can have a lot of lines in a boundary. To contour this 
-#   situation is necessary to refer the index to grain around the boundaries
-    
-    
-# '''
-
-# bd_info = df[["x_start","y_start","x_end","y_end", "grain_left", "grain_right"]].copy() # if want to increase resolution, multiply here
-# bd_info = bd_info.astype('int32')
-
-
-
-# bd_unique =bd_info[["grain_left", "grain_right"]].drop_duplicates()
-
-# bd_unique = bd_unique.reset_index()
-
-
-# #
-
-
-# bd_info["bd_index"] = None
-# bd_info.loc[bd_unique["index"],"bd_index"]= bd_unique.index
-# match = pd.DataFrame()
-# for idx,info_row in bd_info[bd_info.bd_index.isnull()].iterrows():
-#     match = bd_unique.loc[
-#                         (info_row["grain_left"]== bd_unique["grain_left"])
-#                         & 
-#                         (info_row["grain_right"] == bd_unique[ "grain_right"])
-#                         ]
-#     bd_info.loc[idx,"bd_index"] = match.index.item()
-    
-
-
-
-# np_img = np.zeros([height+1, width+1, 3])
-# for idx, row in bd_info.iterrows():
-#     rr,cc = draw.line(row[0],row[1],row[2],row[3])
-
-#     np_img[cc,rr,0] = row.bd_index
-
-
-# #np_img = np.transpose(np_img)
-# plt.imshow(np_img)
-
-
-
-
-
-#---------------------------------------#
-#                                       #
-#                   TO DROP             #
-#                                       #
-#                                       #
-#---------------------------------------#
-
-
-#%%
-
-# '''
-
-#    Write bindary boundaries in jpg image
-    
-# '''
-# path = '../data/'
-# sample = "1_001.jpg"
-# img_jpg = Image.open(path+sample)
-# img_jpg = img_jpg.resize((width,height))
-
-
-
-# coordinates = df[["x_start","y_start","x_end","y_end"]]
-# coordinates_array = coordinates.to_numpy() #multply here
-# coordinates_array = (coordinates_array.astype(int))
-
-
-
-# img_jpg1 = ImageDraw.Draw(img_jpg)
-
-# for row in coordinates_array:
-    
-#     #print(coordinates_array[x])
-#     img_jpg1.line(tuple(row),"white",1)
-    
-# #img1.line((0,0,100,100),"white",1)
-# #img.save(fp = "./001", format = "png")
-# img_jpg.show()
 #%%
 
 
@@ -299,107 +194,6 @@ gb_img = cv2.resize(gb_img,(width,height),interpolation = cv2.INTER_AREA)
 centers, radii, vheight, image, drawing = find_voids_2(gb_img)
 
 plt.imshow(drawing)
-
-#%%
-
-
-# cv2.imwrite('temp.jpg',np_img)
-# #img = cv2.cvtColor(np_img.astype('uint16'), cv2.COLOR_GRAY2BGR)
-# img = cv2.imread('temp.jpg')
-# os.remove("temp.jpg")
-
-# for center, rad in zip(centers, radii):
-#     cv2.circle(img,center,int(rad),(255,5,255), 5)
-
-
-
-# cv2.imshow("image",img)
-# cv2.waitKey()
-# cv2.destroyAllWindows()
-
-#%%
-# #
-# # 1 ->
-# # 2 ->
-# # 3 -> to much
-# # 4 -> 7
-# # 5 -> 2 boundaries
-# # 6 -> 0 boundaries
-# # 7 
-# # 8
-# # 9 -> 4
-# # 10 ->
-
-# #---------------------------------------#
-# #                                       #
-# #                   TO DROP             #
-# #                                       #
-# #                                       #
-# #---------------------------------------#
-
-# font = cv2.FONT_HERSHEY_SIMPLEX
-
-
-
-# num = 0
-# bd_inside_mask = []
-
-# void = np_img.copy()
-
-# for num in [num]:
-# # for num in range(len(centers)):
-        
-#     radi_0 = radii[num]*1.1
-#     center_0 = centers[num]
-#     radi_0 = round(radi_0)
-    
-#     x_size = radi_0*2
-#     y_size = radi_0*2
-    
-#     x_start, y_start = center_0[0] - radi_0 , center_0[1] - radi_0 
-#     x_end, y_end = center_0[0] + radi_0 , center_0[1] + radi_0 
-    
-
-#     cv2.rectangle(void,(x_start,y_start),(x_end,y_end), (0,255,0), 1)
-    
-#     cv2.putText(void, str(num), (x_start,y_start), font, 1, (0,255, 0), 2, cv2.LINE_AA)
-    
-    
-    
-#     void_0 = np_img[y_start : y_end , x_start : x_end]
-#     mask = np.zeros([x_size,y_size], dtype="uint8")
-#     cv2.circle(mask, [radi_0,radi_0], radi_0, 255, -1)
-#     masked = cv2.bitwise_and(void_0,void_0, mask=mask)
-    
-#     void_masked = masked
-    
-
-#     bd_inside_mask= np.unique(void_masked[:,:,0]).tolist()
-    
-#     if 0 in bd_inside_mask:
-#         bd_inside_mask.remove(0)
-    
-#     tuples_start = [np.array(x) for x in bd_info[["x_start","y_start"]][(bd_info["bd_index"].isin(bd_inside_mask))].to_numpy()]
-#     tuples_end = [np.array(x) for x in bd_info[["x_end","y_end"]][(bd_info["bd_index"].isin(bd_inside_mask))].to_numpy()]
-
-#     cv2.line(void, tuples_end[0].astype(int), tuples_start[1].astype(int), (0, 255, 0), 1)
-
-# print(bd_inside_mask)
-
-# plt.figure()
-# plt.imshow(void)
-# #plt.imshow(np_img)
-# plt.show()
-
-# a = bd_info[(bd_info["x_start"]>x_start) &(bd_info["x_start"]<x_end) & (bd_info["y_start"]>y_start) &(bd_info["y_start"]<y_end)]
-
-# #---------------------------------------#
-# #                                       #
-# #                   TO DROP             #
-# #                                       #
-# #                                       #
-# #---------------------------------------#
-
 
 #%%
 bd_info = df[["x_start","y_start","x_end","y_end"]].copy() # if want to increase resolution, multiply here
@@ -413,7 +207,7 @@ np_img = np.zeros([height+1, width+1, 3])
 for idx, row in bd_info.iterrows():
     rr,cc = draw.line(row[0],row[1],row[2],row[3])
 
-    np_img[cc,rr,0] = idx
+    np_img[cc,rr,0] = 255
 
 
 
@@ -453,7 +247,7 @@ for num in range(len(centers)):
     x_start, y_start = center_0[0] - radi_0 , center_0[1] - radi_0 
     x_end, y_end = center_0[0] + radi_0 , center_0[1] + radi_0 
     
-    cv2.rectangle(voids_detected,(x_start,y_start),(x_end,y_end), (0,0,255), 1)
+    cv2.rectangle(voids_detected,(x_start,y_start),(x_end,y_end), (0,255), 1)
     
     bd_start_in_void = bd_info[["x_start","y_start"]][
                             (bd_info["x_start"]>x_start) & (bd_info["x_start"]<x_end) 
@@ -474,7 +268,7 @@ for num in range(len(centers)):
 
 # Another method to keep index
     
-    void_0 = np_img[y_start : y_end , x_start : x_end]
+    #void_0 = np_img[y_start : y_end , x_start : x_end]
 
     
     bd_inside = pd.concat([bd_start_in_void, bd_end_in_void])
@@ -563,7 +357,7 @@ plt.imshow(void[:,:,0])
 plt.title("Dropped")
 
 plt.figure(2)
-plt.imshow(void_detected[:,:,0])
+plt.imshow(voids_detected)
 plt.title("Voids Detected")
 
 
