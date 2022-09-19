@@ -409,6 +409,7 @@ bd_info = bd_info.astype('int32')
 
 
 np_img = np.zeros([height+1, width+1, 3])
+
 for idx, row in bd_info.iterrows():
     rr,cc = draw.line(row[0],row[1],row[2],row[3])
 
@@ -416,7 +417,7 @@ for idx, row in bd_info.iterrows():
 
 
 
-plt.imshow(np_img)
+#plt.imshow(np_img)
 
 
 #
@@ -436,6 +437,8 @@ plt.imshow(np_img)
 
 # num = 8
 void = np_img.copy()
+voids_detected = np_img.copy()
+to_drop = []
 
 # for num in [num]:
 for num in range(len(centers)):
@@ -449,6 +452,8 @@ for num in range(len(centers)):
 
     x_start, y_start = center_0[0] - radi_0 , center_0[1] - radi_0 
     x_end, y_end = center_0[0] + radi_0 , center_0[1] + radi_0 
+    
+    cv2.rectangle(voids_detected,(x_start,y_start),(x_end,y_end), (0,0,255), 1)
     
     bd_start_in_void = bd_info[["x_start","y_start"]][
                             (bd_info["x_start"]>x_start) & (bd_info["x_start"]<x_end) 
@@ -468,17 +473,28 @@ for num in range(len(centers)):
     #bd_to_keep = bd_start_in_void.merge(bd_end_in_void, how ="outer")
 
 # Another method to keep index
+    
+    void_0 = np_img[y_start : y_end , x_start : x_end]
 
-    bd_to_keep = pd.concat([bd_start_in_void, bd_end_in_void])
-    print(bd_to_keep)   
+    
+    bd_inside = pd.concat([bd_start_in_void, bd_end_in_void])
+    
+#TODO: use pd.concat([bd_start_in_void, bd_end_in_void],axis=1) insted of 
+#      operation above could reduce operations and make code clean
+      
+
+
+   # print(bd_to_keep)   
     #bd_to_keep = bd_to_keep.drop_duplicates(keep = False)
-    bd_to_keep = bd_to_keep[~bd_to_keep.index.duplicated(keep=False)]
+    bd_to_drop = bd_inside[bd_inside.index.duplicated()]
+    
+    to_drop += bd_to_drop.index.tolist()
+    
+    bd_to_keep = bd_inside[~bd_inside.index.duplicated(keep=False)]
+   # print(bd_to_keep)
     
     
-    print(bd_to_keep)
-    
-    
-    if len(bd_to_keep) <4:
+    if len(bd_to_keep) <5:
     
     # At this point we have a list of bds that belongs to the void area
     
@@ -490,17 +506,79 @@ for num in range(len(centers)):
         
         for s in (start_points):
             for e in (end_points):
-                cv2.line(void, s, e, (0, 255, 0), 1)
+                cv2.line(void, s, e, (0, 255, 255), 1)
+                
+
+    
+'''
+        NOVA MISSAO
+            ADICIONAR ELEMENTOS DE bd_to_keep em bd_clean
+       done REMOVER ELEMENTOS DE to_drop de bd_info e salvar em bd_clean
         
+'''
+
+
+
+bd_clean = bd_info.drop(index = to_drop)
+
+np_clean = np.zeros([height+1, width+1, 3])
+
+for idx, row in bd_clean.iterrows():
+    rr,cc = draw.line(row[0],row[1],row[2],row[3])
+
+    void[cc,rr] = (0,255,0)
         
-plt.figure()
-plt.imshow(void)
-#plt.imshow(np_img)
-plt.show()
+# plt.figure()
+# plt.imshow(void)
+# #plt.imshow(np_img)
+# plt.show()
 
     
     
 #%%
+
+
+# fig, axs = plt.subplots(2,2)
+# fig.suptitle('GB Layers')
+# axs[0,0].set_title("Original")
+# axs[0,0].imshow(np_img)
+# axs[0,1].imshow(void[:,:,0])
+# axs[1,0].imshow(void[:,:,2])
+# axs[1,1].imshow(void[:,:,1])
+#%%
+
+
+
+
+plt.figure(5)
+plt.imshow(void[:,:,1])
+plt.title("Final")
+
+plt.figure(4)
+plt.imshow(void[:,:,2])
+plt.title("New Lines")
+
+plt.figure(3)
+plt.imshow(void[:,:,0])
+plt.title("Dropped")
+
+plt.figure(2)
+plt.imshow(void_detected[:,:,0])
+plt.title("Voids Detected")
+
+
+plt.figure(1)
+plt.imshow(np_img)
+plt.title("Original")
+
+
+
+plt.show()
+
+
+
+
+
 # gray = cv2.cvtColor(void_masked.astype('uint8'),cv2.COLOR_BGR2GRAY)
 
 
