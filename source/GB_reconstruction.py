@@ -108,11 +108,11 @@ def find_voids_2(original):
 
 #%%
 
-file = "../data/1_007"
+file = "../data/1_001"
 
 #%%
 
-sample1 = np.loadtxt(file+ ".txt")
+sample = np.loadtxt(file+ ".txt")
 
 '''
 # Column 1-3:   right hand average orientation (phi1, PHI, phi2 in radians)
@@ -128,7 +128,7 @@ sample1 = np.loadtxt(file+ ".txt")
 '''
 
 
-df = pd.DataFrame(  data = sample1, 
+df = pd.DataFrame(  data = sample, 
                     columns = ["right_phi1","right_PHI","right_phi2",                 #1-3
                                "left_phi1","left_PHI","left_phi2",                    #4-6 
                                "ori_angle",                                           #7
@@ -162,27 +162,8 @@ height = int(df.y_end.max())+1 #multply here
     Drawing the image using numpy and scikit
     
     The 3rd dimension is an index of the boundarie, so after I can refer to the df.
-    TODO: create an ID in dataframe to avoid an order dependent reference
     
 '''
-
-
-# #np_img = np.zeros([width+1,height+1,3])
-# np_img = np.zeros([height, width, 3])
-# for idx, row in enumerate(coordinates_array):
-#     rr,cc = draw.line(row[0],row[1],row[2],row[3])
-# #    np_img[cc,rr,0:2] = [255, idx/3934*255]
-    
-# #    np_img[cc,rr,0:2] = [1, idx/3934]
-#     np_img[cc,rr,0:2] = [1, idx]
-
-
-# #np_img = np.transpose(np_img)
-# plt.imshow(np_img)
-
-
-# #img2 = Image.fromarray(np_img*255)
-# #img2.show()
 
 
 #%%
@@ -225,17 +206,21 @@ for idx, row in bd_info.iterrows():
 #  mask = np.zeros([width,height], dtype="uint8")
 #  cv2.circle(mask, center_0, radi_0, 255, -1)
 # 
-#   NEXT STEP IS FIND A WAY TO COMPARE THE CIRCLE COORDINATES WITH THE DATASET.
-#   MAYBE BITWISE WORKS, BUT ONLY IF DO NOT NEED TO CREATE AN IMAGE WITH POINTS
+#  TODO: NEXT STEP IS FIND A WAY TO COMPARE THE CIRCLE COORDINATES WITH THE DATASET.
+#    MAYBE BITWISE WORKS, BUT ONLY IF DO NOT NEED TO CREATE AN IMAGE WITH POINTS
 #
 
 # num = 8
 void = np_img.copy()
 voids_detected = np_img.copy()
 to_drop = []
+bd_new = bd_info.copy()
+
+
+useful_void = []
 
 # for num in [num]:
-for num in range(len(centers)):
+for idx,num in enumerate(range(len(centers))):
 
     radi_0 = radii[num]*1.05
     center_0 = centers[num]
@@ -247,7 +232,7 @@ for num in range(len(centers)):
     x_start, y_start = center_0[0] - radi_0 , center_0[1] - radi_0 
     x_end, y_end = center_0[0] + radi_0 , center_0[1] + radi_0 
     
-    cv2.rectangle(voids_detected,(x_start,y_start),(x_end,y_end), (0,255), 1)
+  
     
     bd_start_in_void = bd_info[["x_start","y_start"]][
                             (bd_info["x_start"]>x_start) & (bd_info["x_start"]<x_end) 
@@ -268,18 +253,18 @@ for num in range(len(centers)):
 
 # Another method to keep index
     
-    #void_0 = np_img[y_start : y_end , x_start : x_end]
+   # void_0 = np_img[y_start-50 : y_end+50 , x_start-50 : x_end+50]
 
     
     bd_inside = pd.concat([bd_start_in_void, bd_end_in_void])
     
 #TODO: use pd.concat([bd_start_in_void, bd_end_in_void],axis=1) insted of 
-#      operation above could reduce operations and make code clean
+#      operation above could reduce operations and make code cleaner
       
 
 
-   # print(bd_to_keep)   
-    #bd_to_keep = bd_to_keep.drop_duplicates(keep = False)
+#    print(bd_to_keep)   
+#    bd_to_keep = bd_to_keep.drop_duplicates(keep = False)
     bd_to_drop = bd_inside[bd_inside.index.duplicated()]
     
     to_drop += bd_to_drop.index.tolist()
@@ -288,7 +273,9 @@ for num in range(len(centers)):
    # print(bd_to_keep)
     
     
-    if len(bd_to_keep) <5:
+    if (len(bd_to_keep) <5) & (len(bd_to_keep) >0):
+        useful_void += [[idx,True]]
+     #   cv2.rectangle(voids_detected,(x_start,y_start),(x_end,y_end), (0,255), 1)
     
     # At this point we have a list of bds that belongs to the void area
     
@@ -297,25 +284,23 @@ for num in range(len(centers)):
         
         end_points = bd_to_keep[["x_end","y_end"]].dropna().values.astype("int32").tolist()
     
-        
+        df_copy = pd.DataFrame(columns=bd_info.columns)
         for s in (start_points):
             for e in (end_points):
                 cv2.line(void, s, e, (0, 255, 255), 1)
+              
                 
-
+                
+            # ISSUE: THIS NEW DF SHOULD CONTAIN THE FINAL DF AFTER NEW BD INCLUDED
+            #        I COULDN'T FIND A METHOD TO INCLUDE A NEW LINE WITH ON
+                bd_new.iloc[-1] = pd.Series([s[0],s[1],e[0],e[1]])
+                
     
-'''
-        NOVA MISSAO
-            ADICIONAR ELEMENTOS DE bd_to_keep em bd_clean
-       done REMOVER ELEMENTOS DE to_drop de bd_info e salvar em bd_clean
-        
-'''
-
-
+    #else:
+    #    useful_void += [[idx,False]]
+    #    cv2.rectangle(voids_detected,(x_start,y_start),(x_end,y_end), (255,255), 1)
 
 bd_clean = bd_info.drop(index = to_drop)
-
-np_clean = np.zeros([height+1, width+1, 3])
 
 for idx, row in bd_clean.iterrows():
     rr,cc = draw.line(row[0],row[1],row[2],row[3])
@@ -341,11 +326,14 @@ for idx, row in bd_clean.iterrows():
 # axs[1,1].imshow(void[:,:,1])
 #%%
 
+# new bds = (0,255,255) # Light blue
+# removed bds = (255,0,0) # Red
+# bds_keeped = ()
 
 
 
 plt.figure(5)
-plt.imshow(void[:,:,1])
+plt.imshow(void)
 plt.title("Final")
 
 plt.figure(4)
@@ -369,52 +357,48 @@ plt.title("Original")
 
 plt.show()
 
+#%%
+#TODO: FOR ALL VOID, CREATE A SLICE OF ORIGINAL DF CONSIDERING ONLY BOUNDARIES 
+#      AROUND THE VOID. SAVE IT AS A GOOD DF
 
+for idx,useful in useful_void:
+    
+    if (useful is True):
+        radi_0 = radii[idx]*1.25
+        center_0 = centers[idx]
+        radi_0 = round(radi_0)
+    
+    
+        x_start, y_start = center_0[0] - radi_0 , center_0[1] - radi_0 
+        x_end, y_end = center_0[0] + radi_0 , center_0[1] + radi_0 
+        
+        
+        bd_start_in_area = bd_info[["x_start","y_start","x_end","y_end"]][
+                                (bd_info["x_start"]>x_start) & (bd_info["x_start"]<x_end) 
+                                &
+                                (bd_info["y_start"]>y_start) & (bd_info["y_start"]<y_end)]
+        
+        
+        
+        bd_end_in_area = bd_info[["x_start","y_start","x_end","y_end"]][
+                                (bd_info["x_end"]>x_start) & (bd_info["x_end"]<x_end) 
+                                &
+                                (bd_info["y_end"]>y_start) & (bd_info["y_end"]<y_end)]
+        
+        
+       
+        bd_inside = pd.concat([bd_start_in_area, bd_end_in_area])
 
+        bd_section = bd_inside[~bd_inside.index.duplicated()]
+        
+        # x_size = x_end-x_start
+        # y_size = y_end-y_start
+        
+        # void_new = np.zeros([height+1,width+1, 3])
 
-
-# gray = cv2.cvtColor(void_masked.astype('uint8'),cv2.COLOR_BGR2GRAY)
-
-
-# # edges = cv2.Canny(gray,50,150,apertureSize = 3)
-
-# void_line = void_masked.copy()
-
-# lines = cv2.HoughLines(gray,1,math.pi/360,2)
-
-# # Draw lines on the image
-# for r_theta in lines:
-#     arr = np.array(r_theta[0], dtype=np.float64)
-#     r, theta = arr
-#     # Stores the value of cos(theta) in a
-#     a = np.cos(theta)
- 
-#     # Stores the value of sin(theta) in b
-#     b = np.sin(theta)
- 
-#     # x0 stores the value rcos(theta)
-#     x0 = a*r
- 
-#     # y0 stores the value rsin(theta)
-#     y0 = b*r
- 
-#     # x1 stores the rounded off value of (rcos(theta)-1000sin(theta))
-#     x1 = int(x0 + 1000*(-b))
- 
-#     # y1 stores the rounded off value of (rsin(theta)+1000cos(theta))
-#     y1 = int(y0 + 1000*(a))
- 
-#     # x2 stores the rounded off value of (rcos(theta)+1000sin(theta))
-#     x2 = int(x0 - 1000*(-b))
- 
-#     # y2 stores the rounded off value of (rsin(theta)-1000cos(theta))
-#     y2 = int(y0 - 1000*(a))
- 
-#     # cv2.line draws a line in img from the point(x1,y1) to (x2,y2).
-#     # (0,0,255) denotes the colour of the line to be
-#     # drawn. In this case, it is red.
-#     cv2.line(void_0, (x1, y1), (x2, y2), (255, 0, 0), 1)
-# # Show result
-# plt.figure()
-# plt.imshow(void)
-# plt.show()
+        # for idx, row in bd_to_keep.iterrows():
+        #     rr,cc = draw.line(row[0],row[1],row[2],row[3])
+        #     void_new[cc,rr] = (0,255,0)
+    
+# TODO: MAYBE WE HAVE INTEREST IN CONSIDER THE BEHAVIOR OF BIG HOLES, TO DO
+#       YOU'LL TO START WITH ALL FALSES ELEMENTS IN useful_voids
