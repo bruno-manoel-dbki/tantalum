@@ -289,28 +289,30 @@ for idx,num in enumerate(range(len(centers))):
             for e in (end_points):
                 cv2.line(void, s, e, (0, 255, 255), 1)
               
-                
-                
-            # ISSUE: THIS NEW DF SHOULD CONTAIN THE FINAL DF AFTER NEW BD INCLUDED
-            #        I COULDN'T FIND A METHOD TO INCLUDE A NEW LINE WITH ON
-                bd_new.iloc[-1] = pd.Series([s[0],s[1],e[0],e[1]])
+                bd_new = bd_new.append({'x_start':s[0],
+                                   'y_start':s[1], 
+                                   'x_end':e[0], 
+                                   'y_end':e[1]}, 
+                                  ignore_index=True)
                 
     
     #else:
     #    useful_void += [[idx,False]]
     #    cv2.rectangle(voids_detected,(x_start,y_start),(x_end,y_end), (255,255), 1)
 
-bd_clean = bd_info.drop(index = to_drop)
+bd_clean = bd_new.drop(index = to_drop)
+
+void_new = np.zeros([height+1,width+1, 3])
 
 for idx, row in bd_clean.iterrows():
     rr,cc = draw.line(row[0],row[1],row[2],row[3])
 
-    void[cc,rr] = (0,255,0)
+    void_new[cc,rr] = (0,255,0)
         
-# plt.figure()
-# plt.imshow(void)
-# #plt.imshow(np_img)
-# plt.show()
+plt.figure(10)
+plt.imshow(void_new)
+#plt.imshow(np_img)
+plt.show()
 
     
     
@@ -364,26 +366,28 @@ plt.show()
 for idx,useful in useful_void:
     
     if (useful is True):
-        radi_0 = radii[idx]*1.25
+        radi_0 = radii[idx]*5
         center_0 = centers[idx]
         radi_0 = round(radi_0)
     
     
-        x_start, y_start = center_0[0] - radi_0 , center_0[1] - radi_0 
-        x_end, y_end = center_0[0] + radi_0 , center_0[1] + radi_0 
+        # x_start, y_start = center_0[0] - radi_0 , center_0[1] - radi_0 
+        # x_end, y_end = center_0[0] + radi_0 , center_0[1] + radi_0 
+        x_start, y_start = center_0[0] - 50, center_0[1] - 50 
+        x_end, y_end = center_0[0] + 50 , center_0[1] + 50
         
         
-        bd_start_in_area = bd_info[["x_start","y_start","x_end","y_end"]][
-                                (bd_info["x_start"]>x_start) & (bd_info["x_start"]<x_end) 
+        bd_start_in_area = bd_clean[["x_start","y_start","x_end","y_end"]][
+                                (bd_clean["x_start"]>x_start) & (bd_clean["x_start"]<x_end) 
                                 &
-                                (bd_info["y_start"]>y_start) & (bd_info["y_start"]<y_end)]
+                                (bd_clean["y_start"]>y_start) & (bd_clean["y_start"]<y_end)]
         
         
         
-        bd_end_in_area = bd_info[["x_start","y_start","x_end","y_end"]][
-                                (bd_info["x_end"]>x_start) & (bd_info["x_end"]<x_end) 
+        bd_end_in_area = bd_clean[["x_start","y_start","x_end","y_end"]][
+                                (bd_clean["x_end"]>x_start) & (bd_clean["x_end"]<x_end) 
                                 &
-                                (bd_info["y_end"]>y_start) & (bd_info["y_end"]<y_end)]
+                                (bd_clean["y_end"]>y_start) & (bd_clean["y_end"]<y_end)]
         
         
        
@@ -394,11 +398,11 @@ for idx,useful in useful_void:
         # x_size = x_end-x_start
         # y_size = y_end-y_start
         
-        # void_new = np.zeros([height+1,width+1, 3])
+        void_new = np.zeros([height+1,width+1, 3])
 
-        # for idx, row in bd_to_keep.iterrows():
-        #     rr,cc = draw.line(row[0],row[1],row[2],row[3])
-        #     void_new[cc,rr] = (0,255,0)
+        for idx, row in bd_section.iterrows():
+            rr,cc = draw.line(row[0],row[1],row[2],row[3])
+            void_new[cc,rr] = (0,255,0)
     
 # TODO: MAYBE WE HAVE INTEREST IN CONSIDER THE BEHAVIOR OF BIG HOLES, TO DO
 #       YOU'LL TO START WITH ALL FALSES ELEMENTS IN useful_voids
