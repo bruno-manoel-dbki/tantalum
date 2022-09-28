@@ -191,8 +191,7 @@ bd_info = bd_info.astype('int32')
 np_img = np.zeros([height+1, width+1, 3])
 
 for idx, row in bd_info.iterrows():
-    rr,cc = draw.line(row[0],row[1],row[2],row[3])
-
+    rr,cc = draw.line(row.x_start,row.y_start,row.x_end,row.y_end)
     np_img[cc,rr,0] = 255
 
 
@@ -258,7 +257,7 @@ for idx,num in enumerate(range(len(centers))):
 
 # Another method to keep index
     
-    void_0 = void[y_start-50 : y_end+50 , x_start-50 : x_end+50]
+    void_view = void[y_start-50 : y_end+50 , x_start-50 : x_end+50]
 
     
     bd_inside = pd.concat([bd_start_in_void, bd_end_in_void])
@@ -307,7 +306,7 @@ for idx,num in enumerate(range(len(centers))):
             print("Creating folder")
             os.mkdir("../output")
             
-        plt.imsave("../output/"+ file+ "_void_"+ str(idx) + "_layer.jpg", void_0.astype("uint8"))
+        plt.imsave("../output/"+ file+ "_void_"+ str(idx) + "_base.jpg", void_view.astype("uint8"))
    
     
    
@@ -325,18 +324,21 @@ conected to other boundaries
 '''
 
 
-bd_clean = bd_new.drop(index = to_drop)
+bd_clean = bd_info.drop(index = to_drop)
 
-# void_clean = np.zeros([height+1,width+1, 3])
+bd_new = bd_new.drop(index = to_drop)
 
-# for idx, row in bd_clean.iterrows():
-#     rr,cc = draw.line(row[0],row[1],row[2],row[3])
+void_clean = np.zeros([height+1,width+1, 3])
 
-#     void_clean[cc,rr] = (0,255,0)
+for idx, row in bd_clean.iterrows():
+    rr,cc = draw.line(row.x_start,row.y_start,row.x_end,row.y_end)
+
+    void_clean[cc,rr] = (0,255,0)
+
         
-# plt.figure(10)
-# plt.imshow(void_clean)
-# plt.show()
+plt.figure(10)
+plt.imshow(void_clean)
+plt.show()
 
     
     
@@ -401,42 +403,42 @@ for idx,useful in useful_void:
         x_end, y_end = center_0[0] + 50 , center_0[1] + 50
         
         
-        bd_start_in_area = bd_clean[["x_start","y_start","x_end","y_end"]][
-                                (bd_clean["x_start"]>x_start) & (bd_clean["x_start"]<x_end) 
+        bd_start_in_area = bd_new[
+                                (bd_new["x_start"]>x_start) & (bd_new["x_start"]<x_end) 
                                 &
-                                (bd_clean["y_start"]>y_start) & (bd_clean["y_start"]<y_end)]
+                                (bd_new["y_start"]>y_start) & (bd_new["y_start"]<y_end)]
         
         
         
-        bd_end_in_area = bd_clean[["x_start","y_start","x_end","y_end"]][
-                                (bd_clean["x_end"]>x_start) & (bd_clean["x_end"]<x_end) 
+        bd_end_in_area = bd_new[
+                                (bd_new["x_end"]>x_start) & (bd_new["x_end"]<x_end) 
                                 &
-                                (bd_clean["y_end"]>y_start) & (bd_clean["y_end"]<y_end)]
+                                (bd_new["y_end"]>y_start) & (bd_new["y_end"]<y_end)]
         
         
        
         bd_inside = pd.concat([bd_start_in_area, bd_end_in_area])
-        bd_section = bd_inside[~bd_inside.index.duplicated()]
+        bd_inside = bd_inside[~bd_inside.index.duplicated()]
 
          
-        bd_section.loc[:,"x_start"] = bd_section.x_start - x_start
-        bd_section.loc[:,"x_end"] = bd_section.x_end - x_start
+        bd_inside.loc[:,"x_start"] = bd_inside.x_start - x_start
+        bd_inside.loc[:,"x_end"] = bd_inside.x_end - x_start
         
-        bd_section.loc[:,"y_start"] = bd_section.y_start - y_start
-        bd_section.loc[:,"y_end"] = bd_section.y_end - y_start
+        bd_inside.loc[:,"y_start"] = bd_inside.y_start - y_start
+        bd_inside.loc[:,"y_end"] = bd_inside.y_end - y_start
         
-        x_min = bd_section[["x_start","x_end"]].values.min()
-        y_min = bd_section[["y_start","y_end"]].values.min()
+        x_min = bd_inside[["x_start","x_end"]].values.min()
+        y_min = bd_inside[["y_start","y_end"]].values.min()
         
-        bd_section.loc[:,"x_start"] = bd_section.x_start - x_min
-        bd_section.loc[:,"x_end"] = bd_section.x_end - x_min
+        bd_inside.loc[:,"x_start"] = bd_inside.x_start - x_min
+        bd_inside.loc[:,"x_end"] = bd_inside.x_end - x_min
         
-        bd_section.loc[:,"y_start"] = bd_section.y_start - y_min
-        bd_section.loc[:,"y_end"] = bd_section.y_end -y_min
+        bd_inside.loc[:,"y_start"] = bd_inside.y_start - y_min
+        bd_inside.loc[:,"y_end"] = bd_inside.y_end -y_min
         
         
-        x_size = bd_section[["x_start","x_end"]].values.max()
-        y_size = bd_section[["y_start","y_end"]].values.max()
+        x_size = bd_inside[["x_start","x_end"]].values.max()
+        y_size = bd_inside[["y_start","y_end"]].values.max()
         
         
         
@@ -447,17 +449,14 @@ for idx,useful in useful_void:
         void_new = np.zeros([y_size+1,x_size+1, 3])
         # void_new = np.zeros([height+1,width+1, 3])
 
-        for aux, row in bd_section.iterrows():
-            rr,cc = draw.line(row[0],row[1],row[2],row[3])
+        for aux, row in bd_inside.iterrows():
+            rr,cc = draw.line(row.x_start.astype("uint8"),row.y_start.astype("uint8"),row.x_end.astype("uint8"),row.y_end.astype("uint8"))
             void_new[cc,rr] = (0,255,0)
             
             # void_new[cc-y_start,rr-x_start] = (0,255,0)
         
         
         
-        
-        
-        df_void = pd.concat([df,bd_section],join="outer")
         
         # Pickle File    
         
@@ -468,13 +467,83 @@ for idx,useful in useful_void:
             
             
             
-        plt.imsave("../output/"+ file+ "_void_"+ str(idx) + ".jpg", void_new.astype("uint8"))
-        df_void.to_pickle("../output/"+ file+ "_void_"+ str(idx) + "_new.pkl")  
+        plt.imsave("../output/"+ file+ "_void_"+ str(idx) + "_new.jpg", void_new.astype("uint8"))
+        bd_inside.to_pickle("../output/"+ file+ "_void_"+ str(idx) + "_new.pkl")  
+        
+        
+        
+        
+#%%
+
+for idx,useful in useful_void:
+    
+    if (useful is True):
+        radi_0 = radii[idx]*5
+        center_0 = centers[idx]
+        radi_0 = round(radi_0)
+    
+    
+        # x_start, y_start = center_0[0] - radi_0 , center_0[1] - radi_0 
+        # x_end, y_end = center_0[0] + radi_0 , center_0[1] + radi_0 
+        x_start, y_start = center_0[0] - 50, center_0[1] - 50 
+        x_end, y_end = center_0[0] + 50 , center_0[1] + 50
+        
+        
+        bd_start_in_area = bd_clean[
+                                (bd_clean["x_start"]>x_start) & (bd_clean["x_start"]<x_end) 
+                                &
+                                (bd_clean["y_start"]>y_start) & (bd_clean["y_start"]<y_end)]
+        
+        
+        
+        bd_end_in_area = bd_clean[
+                                (bd_clean["x_end"]>x_start) & (bd_clean["x_end"]<x_end) 
+                                &
+                                (bd_clean["y_end"]>y_start) & (bd_clean["y_end"]<y_end)]
+        
+        
+       
+        bd_inside = pd.concat([bd_start_in_area, bd_end_in_area])
+        bd_inside = bd_inside[~bd_inside.index.duplicated()]
+
+         
+        bd_inside.loc[:,"x_start"] = bd_inside.x_start - x_start
+        bd_inside.loc[:,"x_end"] = bd_inside.x_end - x_start
+        
+        bd_inside.loc[:,"y_start"] = bd_inside.y_start - y_start
+        bd_inside.loc[:,"y_end"] = bd_inside.y_end - y_start
+        
+        x_min = bd_inside[["x_start","x_end"]].values.min()
+        y_min = bd_inside[["y_start","y_end"]].values.min()
+        
+        bd_inside.loc[:,"x_start"] = bd_inside.x_start - x_min
+        bd_inside.loc[:,"x_end"] = bd_inside.x_end - x_min
+        
+        bd_inside.loc[:,"y_start"] = bd_inside.y_start - y_min
+        bd_inside.loc[:,"y_end"] = bd_inside.y_end -y_min
+        
+        
+        x_size = bd_inside[["x_start","x_end"]].values.max()
+        y_size = bd_inside[["y_start","y_end"]].values.max()
         
         
         
         
         
+        
+        # Pickle File    
+        
+        
+        if( not os.path.exists("../output")):
+            print("Creating folder")
+            os.mkdir("../output")
+            
+            
+            
+        #plt.imsave("../output/"+ file+ "_void_"+ str(idx) + "_base.jpg", void_new.astype("uint8"))
+        bd_inside.to_pickle("../output/"+ file+ "_void_"+ str(idx) + "_base.pkl")  
+        
+       
         
         
 
