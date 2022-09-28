@@ -5,7 +5,9 @@ import numpy as np
 import pandas as pd
 from skimage import draw
 from matplotlib import pyplot as plt
+from matplotlib import image
 import cv2
+import os
 
 #from matplotlib import cm
 
@@ -108,11 +110,13 @@ def find_voids_2(original):
 
 #%%
 
-file = "../data/1_001"
+folder = "../data/"
+file = "1_001"
+path = folder + file
 
 #%%
 
-sample = np.loadtxt(file+ ".txt")
+sample = np.loadtxt(path+ ".txt")
 
 '''
 # Column 1-3:   right hand average orientation (phi1, PHI, phi2 in radians)
@@ -169,7 +173,7 @@ height = int(df.y_end.max())+1 #multply here
 #%%
 
 
-gb_img = cv2.imread(file+ '.jpg', 0)
+gb_img = cv2.imread(path+ '.jpg', 0)
 gb_img = cv2.resize(gb_img,(width,height),interpolation = cv2.INTER_AREA)
 
 centers, radii, vheight, image, drawing = find_voids_2(gb_img)
@@ -177,7 +181,8 @@ centers, radii, vheight, image, drawing = find_voids_2(gb_img)
 plt.imshow(drawing)
 
 #%%
-bd_info = df[["x_start","y_start","x_end","y_end"]].copy() # if want to increase resolution, multiply here
+# bd_info = df[["x_start","y_start","x_end","y_end"]].copy() # if want to increase resolution, multiply here
+bd_info = df.copy() 
 bd_info = bd_info.astype('int32')
 
 
@@ -253,7 +258,7 @@ for idx,num in enumerate(range(len(centers))):
 
 # Another method to keep index
     
-   # void_0 = np_img[y_start-50 : y_end+50 , x_start-50 : x_end+50]
+    void_0 = void[y_start-50 : y_end+50 , x_start-50 : x_end+50]
 
     
     bd_inside = pd.concat([bd_start_in_void, bd_end_in_void])
@@ -275,16 +280,17 @@ for idx,num in enumerate(range(len(centers))):
     
     if (len(bd_to_keep) <5) & (len(bd_to_keep) >0):
         useful_void += [[idx,True]]
-     #   cv2.rectangle(voids_detected,(x_start,y_start),(x_end,y_end), (0,255), 1)
+        cv2.rectangle(voids_detected,(x_start,y_start),(x_end,y_end), (0,255), 1)
     
-    # At this point we have a list of bds that belongs to the void area
+   
     
         
         start_points = bd_to_keep[["x_start","y_start"]].dropna().values.astype("int32").tolist()
         
         end_points = bd_to_keep[["x_end","y_end"]].dropna().values.astype("int32").tolist()
     
-        df_copy = pd.DataFrame(columns=bd_info.columns)
+        
+    
         for s in (start_points):
             for e in (end_points):
                 cv2.line(void, s, e, (0, 255, 255), 1)
@@ -295,24 +301,42 @@ for idx,num in enumerate(range(len(centers))):
                                    'y_end':e[1]}, 
                                   ignore_index=True)
                 
+       
+        
+        if( not os.path.exists("../output")):
+            print("Creating folder")
+            os.mkdir("../output")
+            
+        plt.imsave("../output/"+ file+ "_void_"+ str(idx) + "_layer.jpg", void_0.astype("uint8"))
+   
     
-    #else:
+   
+    
+   #else:
     #    useful_void += [[idx,False]]
     #    cv2.rectangle(voids_detected,(x_start,y_start),(x_end,y_end), (255,255), 1)
 
+
+
+'''
+Creating a new DF without any boundary that only exists near a void and is not 
+conected to other boundaries
+
+'''
+
+
 bd_clean = bd_new.drop(index = to_drop)
 
-void_new = np.zeros([height+1,width+1, 3])
+# void_clean = np.zeros([height+1,width+1, 3])
 
-for idx, row in bd_clean.iterrows():
-    rr,cc = draw.line(row[0],row[1],row[2],row[3])
+# for idx, row in bd_clean.iterrows():
+#     rr,cc = draw.line(row[0],row[1],row[2],row[3])
 
-    void_new[cc,rr] = (0,255,0)
+#     void_clean[cc,rr] = (0,255,0)
         
-plt.figure(10)
-plt.imshow(void_new)
-#plt.imshow(np_img)
-plt.show()
+# plt.figure(10)
+# plt.imshow(void_clean)
+# plt.show()
 
     
     
@@ -334,33 +358,33 @@ plt.show()
 
 
 
-plt.figure(5)
-plt.imshow(void)
-plt.title("Final")
+# plt.figure(5)
+# plt.imshow(void)
+# plt.title("Final")
 
-plt.figure(4)
-plt.imshow(void[:,:,2])
-plt.title("New Lines")
+# plt.figure(4)
+# plt.imshow(void[:,:,2])
+# plt.title("New Lines")
 
-plt.figure(3)
-plt.imshow(void[:,:,0])
-plt.title("Dropped")
+# plt.figure(3)
+# plt.imshow(void[:,:,0])
+# plt.title("Dropped")
 
-plt.figure(2)
-plt.imshow(voids_detected)
-plt.title("Voids Detected")
-
-
-plt.figure(1)
-plt.imshow(np_img)
-plt.title("Original")
+# plt.figure(2)
+# plt.imshow(voids_detected)
+# plt.title("Voids Detected")
 
 
+# plt.figure(1)
+# plt.imshow(np_img)
+# plt.title("Original")
 
-plt.show()
+
+
+# plt.show()
 
 #%%
-#TODO: FOR ALL VOID, CREATE A SLICE OF ORIGINAL DF CONSIDERING ONLY BOUNDARIES 
+#      FOR ALL VOID, CREATE A SLICE OF ORIGINAL DF CONSIDERING ONLY BOUNDARIES 
 #      AROUND THE VOID. SAVE IT AS A GOOD DF
 
 for idx,useful in useful_void:
@@ -392,17 +416,67 @@ for idx,useful in useful_void:
         
        
         bd_inside = pd.concat([bd_start_in_area, bd_end_in_area])
-
         bd_section = bd_inside[~bd_inside.index.duplicated()]
-        
-        # x_size = x_end-x_start
-        # y_size = y_end-y_start
-        
-        void_new = np.zeros([height+1,width+1, 3])
 
-        for idx, row in bd_section.iterrows():
+         
+        bd_section.loc[:,"x_start"] = bd_section.x_start - x_start
+        bd_section.loc[:,"x_end"] = bd_section.x_end - x_start
+        
+        bd_section.loc[:,"y_start"] = bd_section.y_start - y_start
+        bd_section.loc[:,"y_end"] = bd_section.y_end - y_start
+        
+        x_min = bd_section[["x_start","x_end"]].values.min()
+        y_min = bd_section[["y_start","y_end"]].values.min()
+        
+        bd_section.loc[:,"x_start"] = bd_section.x_start - x_min
+        bd_section.loc[:,"x_end"] = bd_section.x_end - x_min
+        
+        bd_section.loc[:,"y_start"] = bd_section.y_start - y_min
+        bd_section.loc[:,"y_end"] = bd_section.y_end -y_min
+        
+        
+        x_size = bd_section[["x_start","x_end"]].values.max()
+        y_size = bd_section[["y_start","y_end"]].values.max()
+        
+        
+        
+        
+        
+        
+        
+        void_new = np.zeros([y_size+1,x_size+1, 3])
+        # void_new = np.zeros([height+1,width+1, 3])
+
+        for aux, row in bd_section.iterrows():
             rr,cc = draw.line(row[0],row[1],row[2],row[3])
             void_new[cc,rr] = (0,255,0)
-    
+            
+            # void_new[cc-y_start,rr-x_start] = (0,255,0)
+        
+        
+        
+        
+        
+        df_void = pd.concat([df,bd_section],join="outer")
+        
+        # Pickle File    
+        
+        
+        if( not os.path.exists("../output")):
+            print("Creating folder")
+            os.mkdir("../output")
+            
+            
+            
+        plt.imsave("../output/"+ file+ "_void_"+ str(idx) + ".jpg", void_new.astype("uint8"))
+        df_void.to_pickle("../output/"+ file+ "_void_"+ str(idx) + "_new.pkl")  
+        
+        
+        
+        
+        
+        
+        
+
 # TODO: MAYBE WE HAVE INTEREST IN CONSIDER THE BEHAVIOR OF BIG HOLES, TO DO
-#       YOU'LL TO START WITH ALL FALSES ELEMENTS IN useful_voids
+#       WE'LL START WITH ALL FALSES ELEMENTS IN useful_voids
