@@ -151,19 +151,20 @@ def void_detection(path, file_format, width_reference, height_reference):
 
 
 def func2(bd_info, x_start, y_start, x_end, y_end):
-    bd_start_in_void = bd_info[["x_start","y_start"]][
+    bd_start_in_void = bd_info[
                             (bd_info["x_start"]>x_start) & (bd_info["x_start"]<x_end) 
                             &
                             (bd_info["y_start"]>y_start) & (bd_info["y_start"]<y_end)]
     
     
     
-    bd_end_in_void = bd_info[["x_end","y_end"]][
+    bd_end_in_void = bd_info[
                             (bd_info["x_end"]>x_start) & (bd_info["x_end"]<x_end) 
                             &
                             (bd_info["y_end"]>y_start) & (bd_info["y_end"]<y_end)]
        
     bd_inside = pd.concat([bd_start_in_void, bd_end_in_void])
+    
     
 #TODO: use pd.concat([bd_start_in_void, bd_end_in_void],axis=1) insted of 
 #      operation above could reduce operations and make code cleaner
@@ -173,7 +174,7 @@ def func2(bd_info, x_start, y_start, x_end, y_end):
    
     bd_to_keep = bd_inside[~bd_inside.index.duplicated(keep=False)]
     
-    return bd_to_drop, bd_to_keep
+    return bd_to_drop, bd_to_keep, bd_inside
     
    
 def df_to_img(df, height, width):
@@ -187,72 +188,43 @@ def df_to_img(df, height, width):
         
     return img
      
-def bd_magic(bd_to_keep,bd_new):
-#%%    
-    
-    if (len(bd_to_keep) <5) & (len(bd_to_keep) >0):
-         # useful_void += [[idx,True]]
-         # cv2.rectangle(voids_detected,(x_start,y_start),(x_end,y_end), (0,255), 1)
 
-        start_points = bd_to_keep[["x_start","y_start"]].dropna().values.astype("int32").tolist()
+def main():
+    
+            
+    folder = "../data/"
+    file = "1_001"
+    path = folder + file
+    
+    
+    
+    df = open_gb_file(path, ".txt")
         
-        end_points = bd_to_keep[["x_end","y_end"]].dropna().values.astype("int32").tolist()
-
-        for s in (start_points):
-            for e in (end_points):
-              #  cv2.line(void, s, e, (0, 255, 255), 1)
-              
-                bd_new = bd_new.append({'x_start':s[0],
-                                   'y_start':s[1], 
-                                   'x_end':e[0], 
-                                   'y_end':e[1]}, 
-                                  ignore_index=True)
- #%%
-        return len(start_points)
-    return 0
-
-
-def func(bd_info,height,width, centers, radii):
+    width = int(df.x_end.max())+1 #multply here
+    height = int(df.y_end.max())+1 #multply here
     
-    # TODO bd_info could not be converted to int32
-
-    np_img = df_to_img(bd_info,height,width)
+    centers, radii = void_detection(path, ".jpg", width, height)
     
-
-
-    #plt.imshow(np_img)
-
-
-    #
-    #
-    #   HOW TO CONSIDER THE VOID AS A CIRCLE AND NOT A RECTANGLE?
-    #       We need a mask to compare if the start/end point is inside the void
-    # 
-    #
-    #
-    #  void_0 = np_img[y_start : y_end , x_start : x_end]
-    #  mask = np.zeros([width,height], dtype="uint8")
-    #  cv2.circle(mask, center_0, radi_0, 255, -1)
-    # 
-    #  TODO: NEXT STEP IS FIND A WAY TO COMPARE THE CIRCLE COORDINATES WITH THE DATASET.
-    #    MAYBE BITWISE WORKS, BUT ONLY IF DO NOT NEED TO CREATE AN IMAGE WITH POINTS
-    #
-
+    
+    if( not os.path.exists("../output")):
+        print("Creating folder")
+        os.mkdir("../output")
+    
+    
+    
+    bd_info = df.copy()
+    
     to_drop = []
     bd_new = bd_info.copy()
-
-
-    # for num in [num]:
+    useful_void = []
+    np_img = df_to_img(df, height, width)
+    
     for idx,num in enumerate(range(len(centers))):
+            
             radi_0 = radii[num]*1.05
             center_0 = centers[num]
             radi_0 = round(radi_0)
-
-            #TODO: HOW TO LOOK INSIDE A CIRCLE INSTEAD OF A SQUARE?
-
-
-
-    #
+    
     #
     #   HOW TO CONSIDER THE VOID AS A CIRCLE AND NOT A RECTANGLE?
     #       We need a mask to compare if the start/end point is inside the void
@@ -271,80 +243,104 @@ def func(bd_info,height,width, centers, radii):
             x_end, y_end = center_0[0] + radi_0 , center_0[1] + radi_0 
             
           
-            bd_to_drop, bd_to_keep = func2(bd_info,x_start,y_start,x_end,y_end)
+            bd_to_drop, bd_to_keep, bd_inside = func2(bd_info,x_start,y_start,x_end,y_end)
             
             to_drop += bd_to_drop.index.tolist()
              
             
             # print(bd_to_keep)
-            bd_new = bd_magic(bd_to_keep,bd_new)
-             
-           
-           
-            void_view = np_img[y_start-50 : y_end+50 , x_start-50 : x_end+50]  
-            
+            if (len(bd_to_keep) <5) & (len(bd_to_keep) >0):
+                useful_void += [[idx,True]]
+                
+                void = df_to_img(bd_new, height, width)
+                start_points = bd_to_keep[["x_start","y_start"]].dropna().values.astype("int32").tolist()
+                
+                end_points = bd_to_keep[["x_end","y_end"]].dropna().values.astype("int32").tolist()
 
-    '''
-    Creating a new DF without any boundary that only exists near a void and is not 
-    conected to other boundaries
-
-    '''
+                for s in (start_points):
+                    for e in (end_points):
+                        cv2.line(void, s, e, (0, 0, 255), 1)
+                      
+                        bd_new = bd_new.append({'x_start':s[0],
+                                           'y_start':s[1], 
+                                           'x_end':e[0], 
+                                           'y_end':e[1]}, 
+                                          ignore_index=True)
+                
+                void_view = void[y_start-50 : y_end+50 , x_start-50 : x_end+50]
+                
+                
+                plt.imsave("../output/"+ file+ "_void_"+ str(idx) + "_new.jpg", void_view.astype("uint8"))
+                bd_inside.to_pickle("../output/"+ file+ "_void_"+ str(idx) + "_new.pkl")
+                
     
-
+       
     bd_clean = bd_info.drop(index = to_drop)
-
+    
     bd_new = bd_new.drop(index = to_drop)
-
+    
     void_clean = df_to_img(bd_clean,height,width)
+   
+
+
+
+
+
+
+
+
+
+
+
+
+     
+    for idx,useful in useful_void:
+        
+        if (useful is True):
             
+            center_0 = centers[idx]
+        
+        
+            # x_start, y_start = center_0[0] - radi_0 , center_0[1] - radi_0 
+            # x_end, y_end = center_0[0] + radi_0 , center_0[1] + radi_0 
+            x_start, y_start = center_0[0] - 50, center_0[1] - 50 
+            x_end, y_end = center_0[0] + 50 , center_0[1] + 50
+            
+            bd_to_drop, bd_to_keep, bd_inside = func2(bd_clean,x_start,y_start,x_end,y_end)
+            
+                 
+            bd_inside.loc[:,"x_start"] = bd_inside.x_start - x_start
+            bd_inside.loc[:,"x_end"] = bd_inside.x_end - x_start
+            
+            bd_inside.loc[:,"y_start"] = bd_inside.y_start - y_start
+            bd_inside.loc[:,"y_end"] = bd_inside.y_end - y_start
+            
+            x_min = bd_inside[["x_start","x_end"]].values.min()
+            y_min = bd_inside[["y_start","y_end"]].values.min()
+            
+            bd_inside.loc[:,"x_start"] = bd_inside.x_start - x_min
+            bd_inside.loc[:,"x_end"] = bd_inside.x_end - x_min
+            
+            bd_inside.loc[:,"y_start"] = bd_inside.y_start - y_min
+            bd_inside.loc[:,"y_end"] = bd_inside.y_end -y_min
+            
+            
+            bd_inside.to_pickle("../output/"+ file+ "_void_"+ str(idx) + "_base.pkl")  
+            
+            inside = df_to_img(bd_inside, height, width)
+                
     plt.figure()
     plt.imshow(void_clean)
     plt.show()
-
-    return bd_new, bd_clean, void_view
-        
-
-#def main():
-
-        
-folder = "../data/"
-file = "1_001"
-path = folder + file
-
-df = open_gb_file(path, ".txt")
     
-width = int(df.x_end.max())+1 #multply here
-height = int(df.y_end.max())+1 #multply here
-
-centers, radii = void_detection(path, ".jpg", width, height)
-
-bd_info = df.copy()
-
-for idx,num in enumerate(range(len(centers))):
-    
-        bd_new, bd_clean, void_view = func(bd_info,height,width, centers, radii)
-   
-        if( not os.path.exists("../output")):
-            print("Creating folder")
-            os.mkdir("../output")
-            
-        plt.imsave("../output/"+ file+ "_void_"+ str(idx) + "_base.jpg", void_view.astype("uint8"))
-   
-    
-   
-    
-   #else:
-    #    useful_void += [[idx,False]]
-    #    cv2.rectangle(voids_detected,(x_start,y_start),(x_end,y_end), (255,255), 1)
-
-
-    
- 
+    plt.figure()
+    plt.imshow(np_img)
+    plt.show()
 
             
     
-#     return 0
+    return 0
 
 
-# if __name__ == "__main__":
-    # main()
+if __name__ == "__main__":
+    main()
