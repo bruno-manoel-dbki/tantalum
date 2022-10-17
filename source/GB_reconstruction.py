@@ -294,11 +294,12 @@ for idx,num in enumerate(range(len(centers))):
             for e in (end_points):
                 cv2.line(void, s, e, (0, 255, 255), 1)
               
-                bd_new = bd_new.append({'x_start':s[0],
+                new_line = [{'x_start':s[0],
                                    'y_start':s[1], 
                                    'x_end':e[0], 
-                                   'y_end':e[1]}, 
-                                  ignore_index=True)
+                                   'y_end':e[1]}]
+                df_new_line = pd.DataFrame.from_records(new_line)   
+                bd_new = pd.concat([bd_new,df_new_line] , ignore_index=True)
                 
        
         
