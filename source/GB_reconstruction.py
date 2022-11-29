@@ -111,7 +111,7 @@ def find_voids_2(original):
 #%%
 
 folder = "../data/"
-file = "1_001"
+file = "1_007"
 path = folder + file
 
 #%%
@@ -192,7 +192,7 @@ np_img = np.zeros([height+1, width+1, 3])
 
 for idx, row in bd_info.iterrows():
     rr,cc = draw.line(row.x_start,row.y_start,row.x_end,row.y_end)
-    np_img[cc,rr,0] = 255
+    np_img[cc,rr,1] = 255
 
 
 
@@ -279,12 +279,12 @@ for idx,num in enumerate(range(len(centers))):
     
     if (len(bd_to_keep) <5) & (len(bd_to_keep) >0):
         useful_void += [[idx,True]]
-        cv2.rectangle(voids_detected,(x_start,y_start),(x_end,y_end), (0,255), 1)
+        cv2.rectangle(voids_detected,(x_start-25,y_start-25),(x_end+25,y_end+25), (255,255,255), 2)
+        cv2.circle(voids_detected, center_0, int(radi_0), (255, 255, 255), 1)
     
    
     
         
-        start_points = bd_to_keep[["x_start","y_start"]].dropna().values.astype("int32").tolist()
         
         end_points = bd_to_keep[["x_end","y_end"]].dropna().values.astype("int32").tolist()
     
@@ -292,7 +292,7 @@ for idx,num in enumerate(range(len(centers))):
     
         for s in (start_points):
             for e in (end_points):
-                cv2.line(void, s, e, (0, 255, 255), 1)
+                cv2.line(void, s, e, (255, 255, 255), 2)
               
                 new_line = [{'x_start':s[0],
                                    'y_start':s[1], 
@@ -339,6 +339,7 @@ for idx, row in bd_clean.iterrows():
         
 plt.figure(10)
 plt.imshow(void_clean)
+#plt.imsave("Boundaries.png",void_clean.astype("uint8"))
 plt.show()
 
     
