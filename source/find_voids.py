@@ -1,3 +1,4 @@
+import cv2
 
 def find_voids_2(original):
 	### Read image
@@ -90,7 +91,7 @@ def find_voids_2(original):
     	
     return centers, radii, vheight, image, drawing
 
-def main()
+def main():
     find_voids_2()
     
 if __name__ == "__main__":
