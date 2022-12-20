@@ -223,28 +223,6 @@ M = height//4
 tiles = [flooded_grains[x:x+M,y:y+N] for x in range(0,flooded_grains.shape[0],M) for y in range(0,flooded_grains.shape[1],N)]
 
 
-# In[31]:
-
-
-cv2.imshow('Image',flooded_grains)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
-
-
-# In[70]:
-
-
-plt.imshow(flooded_grains)
-
-
-# In[58]:
-
-
-plt.imshow(flooded_grains)
-
-
-# In[56]:
-
 
 plt.imshow(flooded_grains)
 
@@ -264,65 +242,6 @@ for tile in tiles:
     plt.imshow(tile)
 
 
-# In[34]:
-
-
-df.iloc[2729]
-
-
-# In[49]:
-
-
-full_img = np.zeros([height, width, 3])
-
-for grain in out:
-#        grain = 1512
-        One_grain = df[(df["grain_right"] == grain) | (df["grain_left"] == grain)]
-        grain_info = df_grains_norm.loc[grain,:]
-        x_center = math.ceil(One_grain[['x_start','x_end']].mean().mean())
-        y_center = math.ceil(One_grain[['y_start','y_end']].mean().mean())
-        One_grain = One_grain[One_grain["length"]>10]
-    
-
-
-        start = pd.DataFrame(columns=["x","y"])
-        end = pd.DataFrame(columns=["x","y"])
-        start[["x","y"]] = One_grain[['x_start','y_start']]
-        end[["x","y"]] = One_grain[['x_end','y_end']]
-        points = pd.concat([start,end])
-
-        p = points.drop_duplicates()
-        p1 = p.to_numpy()
-
-        origin = [x_center,y_center]
-
-        sort = sorted(p1, key=clockwiseangle_and_distance)
-        a = []
-        for b in sort:
-            a.append(tuple((int(b[0]),int(b[1]))))
-
-        cv2.polylines(np_img, np.array([a]), True, (phi1,Phi,phi2), 2)
-        
-        
-
-
-        mask = flood(np_img, (y_center, x_center,0))
-        if(np.sum(mask==1)<overflood):
-#                np_img[mask[:,:,1] !=0] = [phi1,Phi,phi2]
-#                 cv2.imshow('f',flood_grains)
-#                 cv2.waitKey(0)
-#                 cv2.destroyAllWindows()
-
-            full_img[mask[:,:,1] !=0] = [phi1,Phi,phi2]
-        else:
-                cv2.imshow('f',full_img[mask[:,:,1] !=0] = [phi1,Phi,phi2])
-                cv2.waitKey(0)
-                cv2.destroyAllWindows()
-            
-        full_img[np_img[:,:,1] !=0] =  [phi1,Phi,phi2]
-            
-plt.imshow(full_img)
-
 
 # In[52]:
 
@@ -341,31 +260,11 @@ for idx, row in df.iterrows():
     rr,cc= draw.line(row.x_start.astype("uint16"),row.y_start.astype("uint16"),row.x_end.astype("uint16"),row.y_end.astype("uint16"))
     full_img[cc,rr,:3] = (1,1,1)
 
-tiles = [full_img[x:x+M,y:y+N] for x in range(0,full_img.shape[0],M) for y in range(0,full_img.shape[1],N)]
-
-plt.imshow(tiles[14])
+tiles_gb = [full_img[x:x+M,y:y+N] for x in range(0,full_img.shape[0],M) for y in range(0,full_img.shape[1],N)]
 
 
-# In[72]:
+plt.imshow(tiles_gb[14])
 
-
-tiles = [flooded_grains[x:x+M,y:y+N] for x in range(0,flooded_grains.shape[0],M) for y in range(0,flooded_grains.shape[1],N)]
-plt.imshow(tiles[14])
-
-
-# In[60]:
-
-
-plt.imshow(tiles_grey[14])
-
-
-# In[10]:
-
-
-len(tiles)
-
-
-# ### Creating tiles from original image and detecting voids
 
 # In[76]:
 
@@ -382,9 +281,4 @@ for tile in tiles_grey:
     centers, radii, vheight, image, drawing = fv.find_voids_2(tile)
     #plt.imshow(tile)
 
-
-# In[ ]:
-
-
-
-
+plt.imshow(tiles_grey[14])
