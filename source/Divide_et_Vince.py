@@ -1,25 +1,4 @@
-#!/usr/bin/env python
-# coding: utf-8
 
-# ## Objective
-# 
-#     OK - Open each image, split it in 4x4. 
-#     OK - Use find_voids to count number of voids in it.
-#     WIP- Colorize grains (1)
-#     4 - If voids>0 
-#             Recontruct boundaries
-#             Colorize after reconstruction (2)
-#         Else
-#             Copy (1)
-# 
-#     5 - Save (1) and (2) as train dataset
-# 
-# 
-
-# ### Open images and split in 16
-# 
-
-# In[68]:
 
 
 import pandas as pd
@@ -36,17 +15,52 @@ plt.rcParams['savefig.dpi'] = 400
 import find_voids as fv
 
 
+#import os
+#path = os.getcwd()
+
+#TODO: remove this global variables from here. Actually we can't do that because origin changes for each grain and I don't know how to pass parameters when use sorted() function
+#import clockwise_segments as clockwise
+origin = [0, 0]
+refvec = [0, 1]
+
+def clockwiseangle_and_distance(point):
+    # Vector between point and the origin: v = p - o
+    vector = [point[0]-origin[0], point[1]-origin[1]]
+    
+    # Length of vector: ||v||
+    lenvector = math.hypot(vector[0], vector[1])
+   
+    # If length is zero there is no angle
+    if lenvector == 0:
+        return -math.pi, 0
+    # Normalize vector: v/||v||
+    normalized = [vector[0]/lenvector, vector[1]/lenvector]
+    dotprod  = normalized[0]*refvec[0] + normalized[1]*refvec[1]     # x1*x2 + y1*y2
+    diffprod = refvec[1]*normalized[0] - refvec[0]*normalized[1]     # x1*y2 - y1*x2
+    angle = math.atan2(diffprod, dotprod)
+    # Negative angles represent counter-clockwise angles so we need to subtract them 
+    # from 2*pi (360 degrees)
+    if angle < 0:
+        return 2*math.pi+angle, lenvector
+    # I return first the angle because that's the primary sorting criterium
+    # but if two vectors have the same angle then the shorter distance should come first.
+    return angle, lenvector
+
+
 # In[4]:
 
 
 
-folder = "../data/"
+folder = "data/"
 file = "1_001"
 path = folder + file
 
 #%%
 
 sample = np.loadtxt(path+ ".txt")
+
+
+
 
 '''
 # Column 1-3:   right hand average orientation (phi1, PHI, phi2 in radians)
@@ -76,36 +90,13 @@ df = pd.DataFrame(  data = sample,
                  )
 
 
-# In[8]:
+width = int(max([max(df.x_end),max(df.x_start)]))+1
+height = int(max([max(df.y_end),max(df.y_start)]))+1
 
-
-
-origin = [0, 0]
-refvec = [0, 1]
-
-def clockwiseangle_and_distance(point):
-    # Vector between point and the origin: v = p - o
-    vector = [point[0]-origin[0], point[1]-origin[1]]
-    
-    # Length of vector: ||v||
-    lenvector = math.hypot(vector[0], vector[1])
-   
-    # If length is zero there is no angle
-    if lenvector == 0:
-        return -math.pi, 0
-    # Normalize vector: v/||v||
-    normalized = [vector[0]/lenvector, vector[1]/lenvector]
-    dotprod  = normalized[0]*refvec[0] + normalized[1]*refvec[1]     # x1*x2 + y1*y2
-    diffprod = refvec[1]*normalized[0] - refvec[0]*normalized[1]     # x1*y2 - y1*x2
-    angle = math.atan2(diffprod, dotprod)
-    # Negative angles represent counter-clockwise angles so we need to subtract them 
-    # from 2*pi (360 degrees)
-    if angle < 0:
-        return 2*math.pi+angle, lenvector
-    # I return first the angle because that's the primary sorting criterium
-    # but if two vectors have the same angle then the shorter distance should come first.
-    return angle, lenvector
-
+flooded_grains = np.zeros([height, width, 3])
+overflood = np.sum(flooded_grains==0) * 0.8
+over = []
+out = []
 
 # In[5]:
 
@@ -125,42 +116,23 @@ df_right = df_right.rename(columns={"grain_right": "grain"})
 df_right = df_right[~df_right.grain.duplicated()].sort_values('grain')
 df_right = df_right.set_index('grain')
 
-
+#TODO: Check the completeness of this join
 
 df_grains = df_left.join(df_right)
 
 df_grains_norm = (df_grains - df_grains.min()) / (df_grains.max() - df_grains.min())
 
 
-# In[69]:
-
-
-
-width = int(max([max(df.x_end),max(df.x_start)]))+1
-height = int(max([max(df.y_end),max(df.y_start)]))+1
-
-flooded_grains = np.zeros([height, width, 3])
-overflood = np.sum(flooded_grains==0) * 0.8
-print(overflood)
-over = []
-out = []
 
 for grain in df_grains.index:
-#        grain = 1512
         One_grain = df[(df["grain_right"] == grain) | (df["grain_left"] == grain)]
         grain_info = df_grains_norm.loc[grain,:]
         np_img = np.zeros([height, width, 3])
 
-        #  width = int(max([max(One_grain.x_end),max(One_grain.x_start)]))+1
-        #  height = int(max([max(One_grain.y_end),max(One_grain.y_start)]))+1
-
         x_center = math.ceil(One_grain[['x_start','x_end']].mean().mean())
         y_center = math.ceil(One_grain[['y_start','y_end']].mean().mean())
 
-
-       # if(x_center < 200 and y_center < 200): 
         phi1,Phi,phi2 = grain_info[["right_phi1","right_PHI","right_phi2"]]
-        #    cv2.putText(np_img, text=str(int(grain)), org=(x_center,y_center),fontFace=2, fontScale=0.4, color=(255,255,255), thickness=1)
 
         for idx, row in One_grain.iterrows():
 
@@ -175,11 +147,6 @@ for grain in df_grains.index:
         if (np.sum(mask==1)<overflood):
             flooded_grains[mask[:,:,1] !=0] = [phi1,Phi,phi2]
             flooded_grains[np_img[:,:,1] !=0] =  [phi1,Phi,phi2]
-            #flood_grains = cv2.bitwise_or(np_img,flood_grains)
-            
-          #  print("ok")
-
-
 
         else:
             over.append(grain)
@@ -206,7 +173,6 @@ for grain in df_grains.index:
 
             mask = flood(np_img, (y_center, x_center,0))
             if(np.sum(mask==1)<overflood):
-#                np_img[mask[:,:,1] !=0] = [phi1,Phi,phi2]
 #                 cv2.imshow('f',flood_grains)
 #                 cv2.waitKey(0)
 #                 cv2.destroyAllWindows()
@@ -216,36 +182,10 @@ for grain in df_grains.index:
             else:
                 out.append(grain)
             #cv2.putText(flooded_grains, text=str(int(grain)), org=(x_center,y_center),fontFace=2, fontScale=0.2, color=(255,255,255), thickness=1)
-        
-N = width//4
-M = height//4
-
-tiles = [flooded_grains[x:x+M,y:y+N] for x in range(0,flooded_grains.shape[0],M) for y in range(0,flooded_grains.shape[1],N)]
 
 
 
-plt.imshow(flooded_grains)
-
-
-# In[40]:
-
-
-np_img = np.zeros([height, width, 3])
-np.sum(np_img==0)
-
-
-# In[41]:
-
-
-for tile in tiles:
-#    centers, radii, vheight, image, drawing = fv.find_voids_2(tile)
-    plt.imshow(tile)
-
-
-
-# In[52]:
-
-
+## PART 2 - SLICE METHOD
 
 width = int(max([max(df.x_end),max(df.x_start)]))+1
 height = int(max([max(df.y_end),max(df.y_start)]))+1
@@ -253,20 +193,13 @@ height = int(max([max(df.y_end),max(df.y_start)]))+1
 N = width//4
 M = height//4
 
-full_img = np.zeros([height, width, 3])
+tiles = [flooded_grains[x:x+M,y:y+N] for x in range(0,flooded_grains.shape[0],M) for y in range(0,flooded_grains.shape[1],N)]
 
-for idx, row in df.iterrows():
-    #print("%d %d %d %d\n" %(row.x_start.astype("uint16"),row.y_start.astype("uint16"),row.x_end.astype("uint16"),row.y_end.astype("uint16")))    
-    rr,cc= draw.line(row.x_start.astype("uint16"),row.y_start.astype("uint16"),row.x_end.astype("uint16"),row.y_end.astype("uint16"))
-    full_img[cc,rr,:3] = (1,1,1)
-
-tiles_gb = [full_img[x:x+M,y:y+N] for x in range(0,full_img.shape[0],M) for y in range(0,full_img.shape[1],N)]
+for tile in tiles:
+#    centers, radii, vheight, image, drawing = fv.find_voids_2(tile)
+    cv2.imshow("Tile",tile)
 
 
-plt.imshow(tiles_gb[14])
-
-
-# In[76]:
 
 
 
