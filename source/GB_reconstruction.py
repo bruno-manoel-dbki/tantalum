@@ -110,8 +110,8 @@ def find_voids_2(original):
 
 #%%
 
-folder = "../data/"
-file = "1_007"
+folder = "data/"
+file = "1_001"
 path = folder + file
 
 #%%
@@ -285,7 +285,7 @@ for idx,num in enumerate(range(len(centers))):
    
     
         
-        
+        start_points = bd_to_keep[["x_start","y_start"]].dropna().values.astype("int32").tolist()
         end_points = bd_to_keep[["x_end","y_end"]].dropna().values.astype("int32").tolist()
     
         
@@ -331,223 +331,224 @@ bd_new = bd_new.drop(index = to_drop)
 
 void_clean = np.zeros([height+1,width+1, 3])
 
-for idx, row in bd_clean.iterrows():
-    rr,cc = draw.line(row.x_start,row.y_start,row.x_end,row.y_end)
+for idx, row in bd_new.iterrows():
+    rr,cc,a = draw.line_aa(row.x_start.astype("uint16"),row.y_start.astype("uint16"),row.x_end.astype("uint16"),row.y_end.astype("uint16"))
 
     void_clean[cc,rr] = (0,255,0)
+
 
         
 plt.figure(10)
 plt.imshow(void_clean)
 #plt.imsave("Boundaries.png",void_clean.astype("uint8"))
 plt.show()
-
+bd_new.to_pickle("output/"+ file + "_remake.pkl")  
     
     
-#%%
+# #%%
 
 
-# fig, axs = plt.subplots(2,2)
-# fig.suptitle('GB Layers')
-# axs[0,0].set_title("Original")
-# axs[0,0].imshow(np_img)
-# axs[0,1].imshow(void[:,:,0])
-# axs[1,0].imshow(void[:,:,2])
-# axs[1,1].imshow(void[:,:,1])
-#%%
+# # fig, axs = plt.subplots(2,2)
+# # fig.suptitle('GB Layers')
+# # axs[0,0].set_title("Original")
+# # axs[0,0].imshow(np_img)
+# # axs[0,1].imshow(void[:,:,0])
+# # axs[1,0].imshow(void[:,:,2])
+# # axs[1,1].imshow(void[:,:,1])
+# #%%
 
-# new bds = (0,255,255) # Light blue
-# removed bds = (255,0,0) # Red
-# bds_keeped = ()
-
-
-
-# plt.figure(5)
-# plt.imshow(void)
-# plt.title("Final")
-
-# plt.figure(4)
-# plt.imshow(void[:,:,2])
-# plt.title("New Lines")
-
-# plt.figure(3)
-# plt.imshow(void[:,:,0])
-# plt.title("Dropped")
-
-# plt.figure(2)
-# plt.imshow(voids_detected)
-# plt.title("Voids Detected")
-
-
-# plt.figure(1)
-# plt.imshow(np_img)
-# plt.title("Original")
+# # new bds = (0,255,255) # Light blue
+# # removed bds = (255,0,0) # Red
+# # bds_keeped = ()
 
 
 
-# plt.show()
+# # plt.figure(5)
+# # plt.imshow(void)
+# # plt.title("Final")
 
-#%%
-#      FOR ALL VOID, CREATE A SLICE OF ORIGINAL DF CONSIDERING ONLY BOUNDARIES 
-#      AROUND THE VOID. SAVE IT AS A GOOD DF
+# # plt.figure(4)
+# # plt.imshow(void[:,:,2])
+# # plt.title("New Lines")
 
-for idx,useful in useful_void:
+# # plt.figure(3)
+# # plt.imshow(void[:,:,0])
+# # plt.title("Dropped")
+
+# # plt.figure(2)
+# # plt.imshow(voids_detected)
+# # plt.title("Voids Detected")
+
+
+# # plt.figure(1)
+# # plt.imshow(np_img)
+# # plt.title("Original")
+
+
+
+# # plt.show()
+
+# #%%
+# #      FOR ALL VOID, CREATE A SLICE OF ORIGINAL DF CONSIDERING ONLY BOUNDARIES 
+# #      AROUND THE VOID. SAVE IT AS A GOOD DF
+
+# for idx,useful in useful_void:
     
-    if (useful is True):
-        radi_0 = radii[idx]*5
-        center_0 = centers[idx]
-        radi_0 = round(radi_0)
+#     if (useful is True):
+#         radi_0 = radii[idx]*5
+#         center_0 = centers[idx]
+#         radi_0 = round(radi_0)
     
     
-        # x_start, y_start = center_0[0] - radi_0 , center_0[1] - radi_0 
-        # x_end, y_end = center_0[0] + radi_0 , center_0[1] + radi_0 
-        x_start, y_start = center_0[0] - 50, center_0[1] - 50 
-        x_end, y_end = center_0[0] + 50 , center_0[1] + 50
+#         # x_start, y_start = center_0[0] - radi_0 , center_0[1] - radi_0 
+#         # x_end, y_end = center_0[0] + radi_0 , center_0[1] + radi_0 
+#         x_start, y_start = center_0[0] - 50, center_0[1] - 50 
+#         x_end, y_end = center_0[0] + 50 , center_0[1] + 50
         
         
-        bd_start_in_area = bd_new[
-                                (bd_new["x_start"]>x_start) & (bd_new["x_start"]<x_end) 
-                                &
-                                (bd_new["y_start"]>y_start) & (bd_new["y_start"]<y_end)]
+#         bd_start_in_area = bd_new[
+#                                 (bd_new["x_start"]>x_start) & (bd_new["x_start"]<x_end) 
+#                                 &
+#                                 (bd_new["y_start"]>y_start) & (bd_new["y_start"]<y_end)]
         
         
         
-        bd_end_in_area = bd_new[
-                                (bd_new["x_end"]>x_start) & (bd_new["x_end"]<x_end) 
-                                &
-                                (bd_new["y_end"]>y_start) & (bd_new["y_end"]<y_end)]
+#         bd_end_in_area = bd_new[
+#                                 (bd_new["x_end"]>x_start) & (bd_new["x_end"]<x_end) 
+#                                 &
+#                                 (bd_new["y_end"]>y_start) & (bd_new["y_end"]<y_end)]
         
         
        
-        bd_inside = pd.concat([bd_start_in_area, bd_end_in_area])
-        bd_inside = bd_inside[~bd_inside.index.duplicated()]
+#         bd_inside = pd.concat([bd_start_in_area, bd_end_in_area])
+#         bd_inside = bd_inside[~bd_inside.index.duplicated()]
 
          
-        bd_inside.loc[:,"x_start"] = bd_inside.x_start - x_start
-        bd_inside.loc[:,"x_end"] = bd_inside.x_end - x_start
+#         bd_inside.loc[:,"x_start"] = bd_inside.x_start - x_start
+#         bd_inside.loc[:,"x_end"] = bd_inside.x_end - x_start
         
-        bd_inside.loc[:,"y_start"] = bd_inside.y_start - y_start
-        bd_inside.loc[:,"y_end"] = bd_inside.y_end - y_start
+#         bd_inside.loc[:,"y_start"] = bd_inside.y_start - y_start
+#         bd_inside.loc[:,"y_end"] = bd_inside.y_end - y_start
         
-        x_min = bd_inside[["x_start","x_end"]].values.min()
-        y_min = bd_inside[["y_start","y_end"]].values.min()
+#         x_min = bd_inside[["x_start","x_end"]].values.min()
+#         y_min = bd_inside[["y_start","y_end"]].values.min()
         
-        bd_inside.loc[:,"x_start"] = bd_inside.x_start - x_min
-        bd_inside.loc[:,"x_end"] = bd_inside.x_end - x_min
+#         bd_inside.loc[:,"x_start"] = bd_inside.x_start - x_min
+#         bd_inside.loc[:,"x_end"] = bd_inside.x_end - x_min
         
-        bd_inside.loc[:,"y_start"] = bd_inside.y_start - y_min
-        bd_inside.loc[:,"y_end"] = bd_inside.y_end -y_min
-        
-        
-        x_size = bd_inside[["x_start","x_end"]].values.max()
-        y_size = bd_inside[["y_start","y_end"]].values.max()
+#         bd_inside.loc[:,"y_start"] = bd_inside.y_start - y_min
+#         bd_inside.loc[:,"y_end"] = bd_inside.y_end -y_min
         
         
+#         x_size = bd_inside[["x_start","x_end"]].values.max()
+#         y_size = bd_inside[["y_start","y_end"]].values.max()
         
         
         
         
         
-        void_new = np.zeros([y_size+1,x_size+1, 3])
-        # void_new = np.zeros([height+1,width+1, 3])
+        
+        
+#         void_new = np.zeros([y_size+1,x_size+1, 3])
+#         # void_new = np.zeros([height+1,width+1, 3])
 
-        for aux, row in bd_inside.iterrows():
-            rr,cc = draw.line(row.x_start.astype("uint8"),row.y_start.astype("uint8"),row.x_end.astype("uint8"),row.y_end.astype("uint8"))
-            void_new[cc,rr] = (0,255,0)
+#         for aux, row in bd_inside.iterrows():
+#             rr,cc = draw.line(row.x_start.astype("uint8"),row.y_start.astype("uint8"),row.x_end.astype("uint8"),row.y_end.astype("uint8"))
+#             void_new[cc,rr] = (0,255,0)
             
-            # void_new[cc-y_start,rr-x_start] = (0,255,0)
+#             # void_new[cc-y_start,rr-x_start] = (0,255,0)
         
         
         
         
-        # Pickle File    
+#         # Pickle File    
         
         
-        if( not os.path.exists("../output")):
-            print("Creating folder")
-            os.mkdir("../output")
+#         if( not os.path.exists("../output")):
+#             print("Creating folder")
+#             os.mkdir("../output")
             
             
             
-        plt.imsave("../output/"+ file+ "_void_"+ str(idx) + "_new.jpg", void_new.astype("uint8"))
-        bd_inside.to_pickle("../output/"+ file+ "_void_"+ str(idx) + "_new.pkl")  
+#         plt.imsave("../output/"+ file+ "_void_"+ str(idx) + "_new.jpg", void_new.astype("uint8"))
+#         bd_inside.to_pickle("../output/"+ file+ "_void_"+ str(idx) + "_new.pkl")  
         
         
         
         
-#%%
+# #%%
 
-for idx,useful in useful_void:
+# for idx,useful in useful_void:
     
-    if (useful is True):
-        radi_0 = radii[idx]*5
-        center_0 = centers[idx]
-        radi_0 = round(radi_0)
+#     if (useful is True):
+#         radi_0 = radii[idx]*5
+#         center_0 = centers[idx]
+#         radi_0 = round(radi_0)
     
     
-        # x_start, y_start = center_0[0] - radi_0 , center_0[1] - radi_0 
-        # x_end, y_end = center_0[0] + radi_0 , center_0[1] + radi_0 
-        x_start, y_start = center_0[0] - 50, center_0[1] - 50 
-        x_end, y_end = center_0[0] + 50 , center_0[1] + 50
+#         # x_start, y_start = center_0[0] - radi_0 , center_0[1] - radi_0 
+#         # x_end, y_end = center_0[0] + radi_0 , center_0[1] + radi_0 
+#         x_start, y_start = center_0[0] - 50, center_0[1] - 50 
+#         x_end, y_end = center_0[0] + 50 , center_0[1] + 50
         
         
-        bd_start_in_area = bd_clean[
-                                (bd_clean["x_start"]>x_start) & (bd_clean["x_start"]<x_end) 
-                                &
-                                (bd_clean["y_start"]>y_start) & (bd_clean["y_start"]<y_end)]
+#         bd_start_in_area = bd_clean[
+#                                 (bd_clean["x_start"]>x_start) & (bd_clean["x_start"]<x_end) 
+#                                 &
+#                                 (bd_clean["y_start"]>y_start) & (bd_clean["y_start"]<y_end)]
         
         
         
-        bd_end_in_area = bd_clean[
-                                (bd_clean["x_end"]>x_start) & (bd_clean["x_end"]<x_end) 
-                                &
-                                (bd_clean["y_end"]>y_start) & (bd_clean["y_end"]<y_end)]
+#         bd_end_in_area = bd_clean[
+#                                 (bd_clean["x_end"]>x_start) & (bd_clean["x_end"]<x_end) 
+#                                 &
+#                                 (bd_clean["y_end"]>y_start) & (bd_clean["y_end"]<y_end)]
         
         
        
-        bd_inside = pd.concat([bd_start_in_area, bd_end_in_area])
-        bd_inside = bd_inside[~bd_inside.index.duplicated()]
+#         bd_inside = pd.concat([bd_start_in_area, bd_end_in_area])
+#         bd_inside = bd_inside[~bd_inside.index.duplicated()]
 
          
-        bd_inside.loc[:,"x_start"] = bd_inside.x_start - x_start
-        bd_inside.loc[:,"x_end"] = bd_inside.x_end - x_start
+#         bd_inside.loc[:,"x_start"] = bd_inside.x_start - x_start
+#         bd_inside.loc[:,"x_end"] = bd_inside.x_end - x_start
         
-        bd_inside.loc[:,"y_start"] = bd_inside.y_start - y_start
-        bd_inside.loc[:,"y_end"] = bd_inside.y_end - y_start
+#         bd_inside.loc[:,"y_start"] = bd_inside.y_start - y_start
+#         bd_inside.loc[:,"y_end"] = bd_inside.y_end - y_start
         
-        x_min = bd_inside[["x_start","x_end"]].values.min()
-        y_min = bd_inside[["y_start","y_end"]].values.min()
+#         x_min = bd_inside[["x_start","x_end"]].values.min()
+#         y_min = bd_inside[["y_start","y_end"]].values.min()
         
-        bd_inside.loc[:,"x_start"] = bd_inside.x_start - x_min
-        bd_inside.loc[:,"x_end"] = bd_inside.x_end - x_min
+#         bd_inside.loc[:,"x_start"] = bd_inside.x_start - x_min
+#         bd_inside.loc[:,"x_end"] = bd_inside.x_end - x_min
         
-        bd_inside.loc[:,"y_start"] = bd_inside.y_start - y_min
-        bd_inside.loc[:,"y_end"] = bd_inside.y_end -y_min
-        
-        
-        x_size = bd_inside[["x_start","x_end"]].values.max()
-        y_size = bd_inside[["y_start","y_end"]].values.max()
+#         bd_inside.loc[:,"y_start"] = bd_inside.y_start - y_min
+#         bd_inside.loc[:,"y_end"] = bd_inside.y_end -y_min
         
         
+#         x_size = bd_inside[["x_start","x_end"]].values.max()
+#         y_size = bd_inside[["y_start","y_end"]].values.max()
         
         
         
         
-        # Pickle File    
         
         
-        if( not os.path.exists("../output")):
-            print("Creating folder")
-            os.mkdir("../output")
+#         # Pickle File    
+        
+        
+#         if( not os.path.exists("../output")):
+#             print("Creating folder")
+#             os.mkdir("../output")
             
             
             
-        #plt.imsave("../output/"+ file+ "_void_"+ str(idx) + "_base.jpg", void_new.astype("uint8"))
-        bd_inside.to_pickle("../output/"+ file+ "_void_"+ str(idx) + "_base.pkl")  
+#         #plt.imsave("../output/"+ file+ "_void_"+ str(idx) + "_base.jpg", void_new.astype("uint8"))
+#         bd_inside.to_pickle("../output/"+ file+ "_void_"+ str(idx) + "_base.pkl")  
         
        
         
         
 
-# TODO: MAYBE WE HAVE INTEREST IN CONSIDER THE BEHAVIOR OF BIG HOLES, TO DO
-#       WE'LL START WITH ALL FALSES ELEMENTS IN useful_voids
+# # TODO: MAYBE WE HAVE INTEREST IN CONSIDER THE BEHAVIOR OF BIG HOLES, TO DO
+# #       WE'LL START WITH ALL FALSES ELEMENTS IN useful_voids

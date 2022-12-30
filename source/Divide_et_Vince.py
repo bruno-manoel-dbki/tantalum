@@ -1,6 +1,3 @@
-
-
-
 import pandas as pd
 import numpy as np
 from skimage import draw,io
@@ -8,6 +5,7 @@ from skimage.segmentation import flood, flood_fill
 import cv2
 import math
 from matplotlib import pyplot as plt
+
 from IPython.display import set_matplotlib_formats
 plt.rcParams['figure.dpi'] = 400
 plt.rcParams['savefig.dpi'] = 400
@@ -57,7 +55,8 @@ path = folder + file
 
 #%%
 
-sample = np.loadtxt(path+ ".txt")
+#sample = np.loadtxt(path+ ".txt")
+sample = pd.read_pickle("output/" + file + "_remake.pkl")
 
 
 
@@ -97,6 +96,7 @@ flooded_grains = np.zeros([height, width, 3])
 overflood = np.sum(flooded_grains==0) * 0.8
 over = []
 out = []
+print("Dataframe sucessfully imported")
 
 # In[5]:
 
@@ -122,9 +122,10 @@ df_grains = df_left.join(df_right)
 
 df_grains_norm = (df_grains - df_grains.min()) / (df_grains.max() - df_grains.min())
 
+print("ETL in Dataframe sucessfully done")
 
-
-for grain in df_grains.index:
+print("Running flood method")
+for grain in df_grains.index.dropna():
         One_grain = df[(df["grain_right"] == grain) | (df["grain_left"] == grain)]
         grain_info = df_grains_norm.loc[grain,:]
         np_img = np.zeros([height, width, 3])
@@ -184,34 +185,34 @@ for grain in df_grains.index:
             #cv2.putText(flooded_grains, text=str(int(grain)), org=(x_center,y_center),fontFace=2, fontScale=0.2, color=(255,255,255), thickness=1)
 
 
-
+#%%
+print("Flood method done")
 ## PART 2 - SLICE METHOD
 
+
+print("Running Slice method")
 width = int(max([max(df.x_end),max(df.x_start)]))+1
 height = int(max([max(df.y_end),max(df.y_start)]))+1
 
 N = width//4
 M = height//4
 
-tiles = [flooded_grains[x:x+M,y:y+N] for x in range(0,flooded_grains.shape[0],M) for y in range(0,flooded_grains.shape[1],N)]
-
-for tile in tiles:
-#    centers, radii, vheight, image, drawing = fv.find_voids_2(tile)
-    cv2.imshow("Tile",tile)
-
-
-
 
 
 grey_img = cv2.imread(path+ '.jpg', 0)
 grey_img = cv2.resize(grey_img,(width,height),interpolation = cv2.INTER_AREA)
 
-tiles_grey = [grey_img[x:x+M,y:y+N] for x in range(0,grey_img.shape[0],M) for y in range(0,grey_img.shape[1],N)]
-i=0
-for tile in tiles_grey:
-    print("tile: "+str(i))
-    i+=1
-    centers, radii, vheight, image, drawing = fv.find_voids_2(tile)
-    #plt.imshow(tile)
+tiles = [flooded_grains[x:x+M,y:y+N] for x in range(0,flooded_grains.shape[0],M) for y in range(0,flooded_grains.shape[1],N)]
 
-plt.imshow(tiles_grey[14])
+tiles_grey = [grey_img[x:x+M,y:y+N] for x in range(0,grey_img.shape[0],M) for y in range(0,grey_img.shape[1],N)]
+
+n_voids = []
+
+for idx in range(len(tiles_grey)):
+    centers, radii, vheight, image, drawing = fv.find_voids_2(tiles_grey[idx])
+    n_voids.append([idx,len(centers)])
+    io.imsave("ml_sets/"+ file + '_'+ str(idx) + '_' + str(len(centers)) + 'void.png',tiles[idx])
+
+#save n_voids as csv
+
+print("Done")
