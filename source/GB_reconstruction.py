@@ -110,7 +110,7 @@ def find_voids_2(original):
 
 #%%
 
-folder = "data/"
+folder = "../data/"
 file = "1_001"
 path = folder + file
 
@@ -183,7 +183,7 @@ plt.imshow(drawing)
 #%%
 # bd_info = df[["x_start","y_start","x_end","y_end"]].copy() # if want to increase resolution, multiply here
 bd_info = df.copy() 
-bd_info = bd_info.astype('int32')
+#bd_info = bd_info.astype('int32')
 
 
 
@@ -191,7 +191,7 @@ bd_info = bd_info.astype('int32')
 np_img = np.zeros([height+1, width+1, 3])
 
 for idx, row in bd_info.iterrows():
-    rr,cc = draw.line(row.x_start,row.y_start,row.x_end,row.y_end)
+    rr,cc,a = draw.line_aa(row.x_start.astype("uint16"),row.y_start.astype("uint16"),row.x_end.astype("uint16"),row.y_end.astype("uint16"))
     np_img[cc,rr,1] = 255
 
 
@@ -233,7 +233,7 @@ for idx,num in enumerate(range(len(centers))):
     #HOW TO LOOK INSIDE A CIRCLE AND NOT INSIDE A SQUARE?
 
 
-    x_start, y_start = center_0[0] - radi_0 , center_0[1] - radi_0 
+    x_start, y_start = int(center_0[0] - radi_0) , int(center_0[1] - radi_0 )
     x_end, y_end = center_0[0] + radi_0 , center_0[1] + radi_0 
     
   
@@ -342,7 +342,7 @@ plt.figure(10)
 plt.imshow(void_clean)
 #plt.imsave("Boundaries.png",void_clean.astype("uint8"))
 plt.show()
-bd_new.to_pickle("output/"+ file + "_remake.pkl")  
+bd_new.to_pickle("../output/"+ file + "_remake.pkl")  
     
     
 # #%%
