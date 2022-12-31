@@ -49,7 +49,7 @@ def clockwiseangle_and_distance(point):
 
 
 
-folder = "data/"
+folder = "../data/"
 file = "1_001"
 path = folder + file
 
@@ -214,7 +214,9 @@ for idx in range(len(tiles_grey)):
     centers, radii, vheight, image, drawing = fv.find_voids_2(tiles_grey[idx])
     n_voids.append([idx,len(centers)])
     io.imsave("ml_sets/"+ file + '_'+ str(idx) + '_' + str(len(centers)) + 'void.png',tiles[idx])
+    io.imsave("../ml_sets/"+ file + '_'+ str(idx) + '_' + str(len(centers)) + 'proof.png',tiles_grey[idx])
 
 #save n_voids as csv
 
 print("Done")
+# %%
