@@ -55,8 +55,9 @@ path = folder + file
 
 #%%
 
-#sample = np.loadtxt(path+ ".txt")
-sample = pd.read_pickle("output/" + file + "_remake.pkl")
+sample = np.loadtxt(path+ ".txt")
+#sample = pd.read_pickle("output/" + file + "_remake.pkl")
+
 
 
 
@@ -123,7 +124,7 @@ df_grains = df_left.join(df_right)
 df_grains_norm = (df_grains - df_grains.min()) / (df_grains.max() - df_grains.min())
 
 print("ETL in Dataframe sucessfully done")
-
+#%%
 print("Running flood method")
 for grain in df_grains.index.dropna():
         One_grain = df[(df["grain_right"] == grain) | (df["grain_left"] == grain)]
@@ -185,8 +186,9 @@ for grain in df_grains.index.dropna():
             #cv2.putText(flooded_grains, text=str(int(grain)), org=(x_center,y_center),fontFace=2, fontScale=0.2, color=(255,255,255), thickness=1)
 
 
-#%%
+
 print("Flood method done")
+#%%
 ## PART 2 - SLICE METHOD
 
 
