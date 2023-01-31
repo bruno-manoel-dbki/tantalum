@@ -128,7 +128,7 @@ def GB_reconstruction(df, prefix: str):
         
     '''
 
-    gb_img = cv2.imread(path+ '.jpg', 0)
+    gb_img = cv2.imread("../data/"+prefix+ '.jpg', 0)
     gb_img = cv2.resize(gb_img,(width,height),interpolation = cv2.INTER_AREA)
 
     centers, radii, vheight, image, drawing = find_voids_2(gb_img)
@@ -244,7 +244,7 @@ def GB_reconstruction(df, prefix: str):
     #plt.imshow(void_clean)
     #plt.imsave("Boundaries.png",void_clean.astype("uint8"))
     #plt.show()
-    bd_new.to_pickle("../output/"+ file + "_remake.pkl")  
+    bd_new.to_pickle("../output/"+ prefix + "_remake.pkl")  
         
     return 1
 
@@ -384,7 +384,7 @@ def Divide_et_Vince(df, prefix: str, suffix: str):
 
 
 
-    grey_img = cv2.imread(path+ '.jpg', 0)
+    grey_img = cv2.imread("../data/"+ prefix + '.jpg', 0)
     grey_img = cv2.resize(grey_img,(width,height),interpolation = cv2.INTER_AREA)
 
     tiles = [flooded_grains[x:x+M,y:y+N] for x in range(0,flooded_grains.shape[0],M) for y in range(0,flooded_grains.shape[1],N)]
@@ -438,7 +438,7 @@ def main():
                                 "grain_right","grain_left"                             #20-21
                                 ]                    
                     )
-    Divide_et_Vince(df, prefix = file, suffix="void")
+    #Divide_et_Vince(df, prefix = file, suffix="void")
 
 
     GB_reconstruction(df, prefix = file)
