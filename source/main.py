@@ -23,6 +23,18 @@ refvec = [0, 1]
 
 
 
+''' 
+Method:     find_voids_2 
+Parameters: original: np_array
+Return:     
+            centers: list of the center of all voids found, sorted by coordinates.
+            radii:   list of radius of all voids found, sorted by coordinates.
+            vheight: 
+            image:   The original image
+            drawing: The image with circle over all voids detected.
+
+Description: This method works with classical image processing to detect circles. It applies to edge detection with bilateralFiler and then filter by threshold. Then all countors are detect to 
+'''
 def find_voids_2(original):
 	### Read image
 
@@ -38,18 +50,12 @@ def find_voids_2(original):
 	#original = cv2.medianBlur(original,5)
 	#original = cv2.GaussianBlur(original,(5,5),0)
 	
-	### TO CHANGE:
-	### Determine treshold for binary image. First value is gray-value used for cut-off, second is white.
+	### TODO: Determine threshold for binary image. First value is gray-value used for cut-off, second is white.
     retval, image = cv2.threshold(original, 60, 255, cv2.THRESH_BINARY)
 
 	
 	### Find eliptical shapes with a minimum size and dilate picutre
-    #el = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (1, 1))
-    #image = cv2.dilate(image, el, iterations=1)
-
-	### Save picture temporarily for comparison
-	#cv2.imwrite(pa_pic+"_dilated.png", image)
-	#cv2.imshow('dilated', image)
+    
 	
 	### Read contours from dilated binary picture
     contours, hierarchy = cv2.findContours(image,
@@ -71,6 +77,8 @@ def find_voids_2(original):
         area = cv2.contourArea(contour)
 		### there is one contour that contains all others (perimeter of image), filter it out considering 80% of full image size
  		### do not run the rest of the loop, jump straight to next contour
+        
+        ## The contour that contains all other is all one that is bigger than 80% of image size. This one is droped 
         if area > (original.size*0.8):
                 continue
 		
@@ -79,10 +87,8 @@ def find_voids_2(original):
 		
 		#el2 = cv2.fitEllipse(contour)
 
-		### TO CHANGE:
-		### Determine radius of circle by taking half of a side (which one??) 
-		### of the bounding Rectangle, then multiply by a factor if desired to make 
-		### up for mismatch due to color treshold in line 14.
+		### TODO: Determine radius of circle by taking half of a side (which one??) of the bounding Rectangle, then multiply by a factor if desired to make  up for mismatch due to color treshold in line 14.
+		
         radius = (br[2]/2)*1.4
         radii.append(radius)
 		
@@ -95,7 +101,6 @@ def find_voids_2(original):
 					
         center = (int(m['m10'] / m['m00']), int(m['m01'] / m['m00']))
         centers.append(center)
-		#cv2.circle(drawing, center, 3, (255, 0, 0), -1)
         cv2.circle(drawing, center, int(radius), (0, 0, 255), 3)
 	
     print("The program has detected {} voids".format(len(centers)))
@@ -114,11 +119,23 @@ def find_voids_2(original):
     	
     return centers, radii, vheight, image, drawing
 
+''' 
+Method:     GB_reconstruction 
+Parameters: 
+            df:     A pandas dataframe contaning all information about grain and grain boundaries
+            prefix: The name of original file to be used in the output file name
+
+
+Output:     prefix.pkl: A pickle file named after the input file saved in the output folder
+
+Description: This method aims to reconstruct boundaries in a set o selected voids detected by find_voids_2().
+'''
+
 
 def GB_reconstruction(df, prefix: str):
 
-    width = int(df.x_end.max())+1 #multply here
-    height = int(df.y_end.max())+1 #multply here
+    width = int(df.x_end.max())+1 
+    height = int(df.y_end.max())+1 
 
     '''
 
@@ -132,8 +149,6 @@ def GB_reconstruction(df, prefix: str):
     gb_img = cv2.resize(gb_img,(width,height),interpolation = cv2.INTER_AREA)
 
     centers, radii, vheight, image, drawing = find_voids_2(gb_img)
-
-    #plt.imshow(drawing)
 
     bd_info = df.copy() 
 
@@ -159,14 +174,14 @@ def GB_reconstruction(df, prefix: str):
         center_0 = centers[num]
         radi_0 = round(radi_0)
 
-        #TODO:HOW TO LOOK INSIDE A CIRCLE AND NOT INSIDE A SQUARE?
+        #TODO:The next steps aims to deal in each void area, but we're working in a square area, what means we can have unexpeted lines in the image. Change a square to a mask with a circular area is a must to simplify it.
 
 
         x_start, y_start = int(center_0[0] - radi_0) , int(center_0[1] - radi_0 )
         x_end, y_end = center_0[0] + radi_0 , center_0[1] + radi_0 
         
     
-        
+        # Select all lines in dataframe that are inside the square void area
         bd_start_in_void = bd_info[["x_start","y_start"]][
                                 (bd_info["x_start"]>x_start) & (bd_info["x_start"]<x_end) 
                                 &
@@ -180,18 +195,22 @@ def GB_reconstruction(df, prefix: str):
                                 (bd_info["y_end"]>y_start) & (bd_info["y_end"]<y_end)]
         
         
-        
+        #Security step to verify if the area is correct
         void_view = void[y_start-50 : y_end+50 , x_start-50 : x_end+50]
 
-        
+        # Full Outer Join operation to combine all lines from previous operation. 
+        #TODO: Check if the operation didn't drop any good boundary
         bd_inside = pd.concat([bd_start_in_void, bd_end_in_void])
         
+        # Drop all boundaries that start and end inside the area. This boundaries usually exists because the edge detection used to create the original data
         bd_to_drop = bd_inside[bd_inside.index.duplicated()]
         
         to_drop += bd_to_drop.index.tolist()
         
+        # We are interested in all boundaries that start or end over the selected area must, so everthing that wasn't dropped in the step above 
         bd_to_keep = bd_inside[~bd_inside.index.duplicated(keep=False)]
         
+        # All voids that connect more than 4 grain boundaries around it are considered big enough to be dropped. 
         if (len(bd_to_keep) <5) & (len(bd_to_keep) >0):
             useful_void += [[idx,True]]
             cv2.rectangle(voids_detected,(x_start-25,y_start-25),(x_end+25,y_end+25), (255,255,255), 2)
@@ -201,7 +220,7 @@ def GB_reconstruction(df, prefix: str):
             end_points = bd_to_keep[["x_end","y_end"]].dropna().values.astype("int32").tolist()
         
             
-        
+        # Write a line from all start_points to all end_points. This step close grains destroyed by voids and insert these new lines to a new dataframe.
             for s in (start_points):
                 for e in (end_points):
                     cv2.line(void, s, e, (255, 255, 255), 2)
@@ -226,11 +245,13 @@ def GB_reconstruction(df, prefix: str):
 
 
 
+    #Removing void edges from final detaframe
 
     bd_clean = bd_info.drop(index = to_drop)
 
     bd_new = bd_new.drop(index = to_drop)
 
+    #Security step to verify if the new sample is ok
     void_clean = np.zeros([height+1,width+1, 3])
 
     for idx, row in bd_new.iterrows():
@@ -246,8 +267,16 @@ def GB_reconstruction(df, prefix: str):
     #plt.show()
     bd_new.to_pickle("../output/"+ prefix + "_remake.pkl")  
         
-    return 1
+    return 0
 
+
+''' 
+Method:     clockwiseangle_and_distance 
+Parameters: point: This parameter is the point we need to compare with the origin to evaluate the lenght and angle of the point.
+Return:     angle: The angle between the input point and the origin informed
+            lenvector: the distance between the input point and the origin informed
+Description: This method is part of the colorizing method. Here we obtain the position of the point to obtain a clockwise oriantation based on angle and lenght of vector. 
+'''
 
 def clockwiseangle_and_distance(point):
     # Vector between point and the origin: v = p - o
@@ -273,6 +302,22 @@ def clockwiseangle_and_distance(point):
     return angle, lenvector
 
 
+''' 
+Method:     Divide_et_Vince 
+Parameters: 
+            df:     A pandas dataframe contaning all information about grain and grain boundaries
+            prefix: The name of original file to be used in the output file name
+
+            suffix: The name to be used in the ouput image
+
+Output:     
+            32 images in the ml_sets folder. They tiles from the original and colorized image. 
+                Proof: The original image to compare with the color version
+                Prefix + Suffix: An image colorized by angles between grains (phi1, Phi, phi2)
+Description:
+            This method take the dataframe and extract the all lines related with each grain. After that it take each grain, sort the lines clockwise considering the center of the grain, create a closed polygon and fill it with the in RGB channels considering phi1, Phi, and phi2 from dataframe. At the end it combines every grain in a new image. The second part we split the image ins 16 same size tiles and save in the ml_set folder.
+
+'''
 
 def Divide_et_Vince(df, prefix: str, suffix: str):
 
@@ -312,6 +357,7 @@ def Divide_et_Vince(df, prefix: str, suffix: str):
     print("ETL in Dataframe sucessfully done")
 
     print("Running flood method")
+
     for grain in df_grains.index.dropna():
             One_grain = df[(df["grain_right"] == grain) | (df["grain_left"] == grain)]
             grain_info = df_grains_norm.loc[grain,:]
@@ -332,11 +378,16 @@ def Divide_et_Vince(df, prefix: str, suffix: str):
             #        print(str(grain) + " len 0 "+ str(np.sum(mask==1)))
             np_img[np_img[:,:,1] !=0] =  [phi1,Phi,phi2]
 
+            #Overflood is a static valeu based on the original image size to identify when the flood method finds an open form and ends filling all the image.
             if (np.sum(mask==1)<overflood):
                 flooded_grains[mask[:,:,1] !=0] = [phi1,Phi,phi2]
                 flooded_grains[np_img[:,:,1] !=0] =  [phi1,Phi,phi2]
-
+            
+            
+            #TODO: The method in this else condition can solve all the colorize stuff, the thing to do here is find a way to colorize the corners of the image, because when the polygon will be closed we get an error. This method is more efficient then the flood_fill.
+ 
             else:
+                #over is a list to check all grains where overflow happened.
                 over.append(grain)
                 One_grain = One_grain[One_grain["length"]>2]
 
@@ -349,16 +400,20 @@ def Divide_et_Vince(df, prefix: str, suffix: str):
                 p = points.drop_duplicates()
                 p1 = p.to_numpy()
 
+                #TODO: This origin is a global variable, need to be substituted by a parameter in this method, but the issue is that the sorted method doesn't allow us to change send more than one parameter (maybe just I didn't realize how to do that).
+
                 origin = [x_center,y_center]
                 
+                # With all points of a grain packed in p1, we get a clockwise sorte based on angle and distance of the centroid.
                 sort = sorted(p1, key=clockwiseangle_and_distance)
                 a = []
                 for b in sort:
                     a.append(tuple((int(b[0]),int(b[1]))))
-
+                
+                # Use the polylines method with the sorted list of point to ensure that the polygon will be closed.
                 cv2.polylines(np_img, np.array([a]), True, (phi1,Phi,phi2), 2)
 
-
+                # Flood again with the garantee of a closed grain.
                 mask = flood(np_img, (y_center, x_center,0))
                 if(np.sum(mask==1)<overflood):
     #                 cv2.imshow('f',flood_grains)
@@ -404,6 +459,10 @@ def Divide_et_Vince(df, prefix: str, suffix: str):
     print("Divide et Vince Done")
 
 
+
+
+
+
 def main():
 
     
@@ -438,7 +497,7 @@ def main():
                                 "grain_right","grain_left"                             #20-21
                                 ]                    
                     )
-    #Divide_et_Vince(df, prefix = file, suffix="void")
+    Divide_et_Vince(df, prefix = file, suffix="void")
 
 
     GB_reconstruction(df, prefix = file)
