@@ -16,7 +16,7 @@ from matplotlib import pyplot as plt
 from IPython.display import set_matplotlib_formats
 plt.rcParams['figure.dpi'] = 400
 plt.rcParams['savefig.dpi'] = 400
-import 
+import wield_input as wield
 
 
 # In[6]:
@@ -64,23 +64,28 @@ height = int(max([max(df.y_end),max(df.y_start)]))+1
 
 print("Dataframe " + file+ " sucessfully imported")
 
-df_wield = df[['right_phi1','right_PHI','right_phi2','grain_right','grain_left','trace_angle']]
-#df_right = df_right.rename(columns={"grain_right": "grain"})
 
-#df_right = df_right[~df_right.grain.duplicated()].sort_values('grain')
-#df_right = df_right.set_index('grain')
+#df_wield = df[['right_phi1','right_PHI','right_phi2','left_phi1','left_PHI','left_phi2','trace_angle']]
 
-#TODO: Check the completeness of this join
+np_img = np.zeros([height+1, width+1, 3])
 
-#df_grains = df_left.join(df_right, lsuffix='_left', rsuffix='_right')
+for index, row in df.iterrows():
+    #if(index <200):
+    energy = wield.energy1d(row[['right_phi1','right_PHI','right_phi2','left_phi1','left_PHI','left_phi2','trace_angle']].to_dict())
+    df.loc[index,'gb_energy'] = energy
+    print(energy)
+df.gb_energy = (df.gb_energy - df.gb_energy.min()) / (df.gb_energy.max() - df.gb_energy.min())
 
-#df_grains_norm = (df_grains - df_grains.min()) / (df_grains.max() - df_grains.min())
-
+for index, row in df.iterrows():   
+    rr,cc,a = draw.line_aa(row.x_start.astype("uint16"),row.y_start.astype("uint16"),row.x_end.astype("uint16"),row.y_end.astype("uint16"))
+    np_img[cc,rr,0] = row.gb_energy
 print("ETL in Dataframe sucessfully done")
 
 
+#plt.figure()
+io.imsave("gb.png",np_img)
+#plt.show()
+
 # In[44]:
-
-
 
 
