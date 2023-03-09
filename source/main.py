@@ -426,37 +426,41 @@ def Divide_et_Vince(df, prefix: str, suffix: str):
                     out.append(grain)
                 #cv2.putText(flooded_grains, text=str(int(grain)), org=(x_center,y_center),fontFace=2, fontScale=0.2, color=(255,255,255), thickness=1)
   
+
+
     print("Flood method done")
+    io.imsave("../"+ prefix + '_'+ str(idx) + '_' + suffix + '.png',flooded_grains)
+
     ## PART 2 - SLICE METHOD
 
 
-    print("Running Slice method")
-    width = int(max([max(df.x_end),max(df.x_start)]))+1
-    height = int(max([max(df.y_end),max(df.y_start)]))+1
+    # print("Running Slice method")
+    # width = int(max([max(df.x_end),max(df.x_start)]))+1
+    # height = int(max([max(df.y_end),max(df.y_start)]))+1
 
-    N = width//4
-    M = height//4
+    # N = width//4
+    # M = height//4
 
 
 
-    grey_img = cv2.imread("../data/"+ prefix + '.jpg', 0)
-    grey_img = cv2.resize(grey_img,(width,height),interpolation = cv2.INTER_AREA)
+    # grey_img = cv2.imread("../data/"+ prefix + '.jpg', 0)
+    # grey_img = cv2.resize(grey_img,(width,height),interpolation = cv2.INTER_AREA)
 
-    tiles = [flooded_grains[x:x+M,y:y+N] for x in range(0,flooded_grains.shape[0],M) for y in range(0,flooded_grains.shape[1],N)]
+    # tiles = [flooded_grains[x:x+M,y:y+N] for x in range(0,flooded_grains.shape[0],M) for y in range(0,flooded_grains.shape[1],N)]
 
-    tiles_grey = [grey_img[x:x+M,y:y+N] for x in range(0,grey_img.shape[0],M) for y in range(0,grey_img.shape[1],N)]
+    # tiles_grey = [grey_img[x:x+M,y:y+N] for x in range(0,grey_img.shape[0],M) for y in range(0,grey_img.shape[1],N)]
 
-    n_voids = []
+    # n_voids = []
 
-    for idx in range(len(tiles_grey)):
-        centers, radii, vheight, image, drawing = find_voids_2(tiles_grey[idx])
-        n_voids.append([idx,len(centers)])
-        io.imsave("../ml_sets/"+ prefix + '_'+ str(idx) + '_' + str(len(centers)) + suffix + '.png',tiles[idx])
-        io.imsave("../ml_sets/"+ prefix + '_'+ str(idx) + '_' + str(len(centers)) + 'proof.png',tiles_grey[idx])
+    # for idx in range(len(tiles_grey)):
+    #     centers, radii, vheight, image, drawing = find_voids_2(tiles_grey[idx])
+    #     n_voids.append([idx,len(centers)])
+    #     io.imsave("../ml_sets/"+ prefix + '_'+ str(idx) + '_' + str(len(centers)) + suffix + '.png',tiles[idx])
+    #     io.imsave("../ml_sets/"+ prefix + '_'+ str(idx) + '_' + str(len(centers)) + 'proof.png',tiles_grey[idx])
 
-    #save n_voids as csv
+    # #save n_voids as csv
 
-    print("Divide et Vince Done")
+    # print("Divide et Vince Done "+ prefix)
 
 
 
