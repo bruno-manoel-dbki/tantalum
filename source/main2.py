@@ -1,4 +1,10 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sun Mar 26 20:18:51 2023
 
+@author: bmdbki
+"""
 
 import pandas as pd
 import numpy as np
@@ -237,7 +243,7 @@ def GB_reconstruction(df, prefix: str):
                 print("Creating folder")
                 os.mkdir("../output")
                 
-            # plt.imsave("../output/"+ prefix+ "_void_"+ str(idx) + "_base.jpg", void_view.astype("uint8"))
+           # plt.imsave("../output/"+ prefix+ "_void_"+ str(idx) + "_base.jpg", void_view.astype("uint8"))
     #else:
         #    useful_void += [[idx,False]]
         #    cv2.rectangle(voids_detected,(x_start,y_start),(x_end,y_end), (255,255), 1)
@@ -302,9 +308,9 @@ def clockwiseangle_and_distance(point):
 
 
     
+###############################
     
-    
-#file = "1_002"        
+# file = "1_001"        
 if __name__ == "__main__":
     file = sys.argv[1]
     
@@ -356,7 +362,8 @@ prefix = file
 suffix = "remake"
  
 GB_reconstruction(df, prefix = file)
-  
+
+
 sample = pd.read_pickle("../output/" + file + "_remake.pkl")
   
 df = pd.DataFrame(  data = sample, 
@@ -373,7 +380,7 @@ df = pd.DataFrame(  data = sample,
                 )
  
 
-# In[5]:
+
 
 
 
@@ -410,75 +417,54 @@ for grain in df_grains.index.dropna():
         y_center = math.ceil(One_grain[['y_start','y_end']].mean().mean())
 
         phi1,Phi,phi2 = grain_info[["right_phi1","right_PHI","right_phi2"]]
+#        if(x_center >0 and y_center <200):
 
-        for idx, row in One_grain.iterrows():
-
-            rr,cc,a = draw.line_aa(row.x_start.astype("uint16"),row.y_start.astype("uint16"),row.x_end.astype("uint16"),row.y_end.astype("uint16"))
-            np_img[cc,rr] = (1,1,1)
-
+                #over is a list to check all grains where overflow happened.
+        One_grain = One_grain[One_grain["length"]>5]
+         
+        start = pd.DataFrame(columns=["x","y"])
+        end = pd.DataFrame(columns=["x","y"])
+        start[["x","y"]] = One_grain[['x_start','y_start']]
+        end[["x","y"]] = One_grain[['x_end','y_end']]
+        points = pd.concat([start,end])
+         
+        # points = points.drop_duplicates()
+        p1 = points.to_numpy()
+         
+         #TODO: This origin is a global variable, need to be substituted by a parameter in this method, but the issue is that the sorted method doesn't allow us to change send more than one parameter (maybe just I didn't realize how to do that).
+         
+        origin = [x_center,y_center]
+         
+         # With all points of a grain packed in p1, we get a clockwise sorte based on angle and distance of the centroid.
+        sort = sorted(p1, key=clockwiseangle_and_distance)
+        a = []
+        for b in sort:
+            a.append(tuple((int(b[0]),int(b[1]))))
+         
+         # Use the polylines method with the sorted list of point to ensure that the polygon will be closed.
+        cv2.polylines(np_img, np.array([a]), True, (phi1,Phi,phi2), 2)
+         
+         # Flood again with the garantee of a closed grain.
         mask = flood(np_img, (y_center, x_center,0))
-        #        print(str(grain) + " len "+ str(np.count_nonzero(mask)))
-        #        print(str(grain) + " len 0 "+ str(np.sum(mask==1)))
-        np_img[np_img[:,:,1] !=0] =  [phi1,Phi,phi2]
-
-        #Overflood is a static valeu based on the original image size to identify when the flood method finds an open form and ends filling all the image.
-        if (np.sum(mask==1)<overflood):
-            flooded_grains[mask[:,:,1] !=0] = [phi1,Phi,phi2]
-            flooded_grains[np_img[:,:,1] !=0] =  [phi1,Phi,phi2]
+        # print("Over: "+ str(overflood))
+        if(np.sum(mask==1)<overflood):
         
-        
-        #TODO: The method in this else condition can solve all the colorize stuff, the thing to do here is find a way to colorize the corners of the image, because when the polygon will be closed we get an error. This method is more efficient then the flood_fill.
-
+             flooded_grains[mask[:,:,1] !=0] = [phi1,Phi,phi2]
+             flooded_grains[np_img[:,:,1] !=0] = [phi1,Phi,phi2]
+            
+             
         else:
-            #over is a list to check all grains where overflow happened.
-            over.append(grain)
-            One_grain = One_grain[One_grain["length"]>2]
-
-            start = pd.DataFrame(columns=["x","y"])
-            end = pd.DataFrame(columns=["x","y"])
-            start[["x","y"]] = One_grain[['x_start','y_start']]
-            end[["x","y"]] = One_grain[['x_end','y_end']]
-            points = pd.concat([start,end])
-
-            p = points.drop_duplicates()
-            p1 = p.to_numpy()
-
-            #TODO: This origin is a global variable, need to be substituted by a parameter in this method, but the issue is that the sorted method doesn't allow us to change send more than one parameter (maybe just I didn't realize how to do that).
-
-            origin = [x_center,y_center]
-            
-            # With all points of a grain packed in p1, we get a clockwise sorte based on angle and distance of the centroid.
-            sort = sorted(p1, key=clockwiseangle_and_distance)
-            a = []
-            for b in sort:
-                a.append(tuple((int(b[0]),int(b[1]))))
-            
-            # Use the polylines method with the sorted list of point to ensure that the polygon will be closed.
-            cv2.polylines(np_img, np.array([a]), True, (phi1,Phi,phi2), 2)
-
-            # Flood again with the garantee of a closed grain.
-            mask = flood(np_img, (y_center, x_center,0))
-           # print("Over: "+ str(overflood))
-            if(np.sum(mask==1)<overflood):
- 
-                
-
-                
-                flooded_grains[mask[:,:,1] !=0] = [phi1,Phi,phi2]
-                flooded_grains[np_img[:,:,1] !=0] =  [phi1,Phi,phi2]
-               
-                
-            else:
-                #print(np.sum(mask==1))
-                out.append(grain)
-                
-            #cv2.putText(flooded_grains, text=str(int(grain)), org=(x_center,y_center),fontFace=2, fontScale=0.2, color=(255,255,255), thickness=1)
-
+             #print(np.sum(mask==1))
+             out.append(grain)
+             
+             #cv2.putText(flooded_grains, text=str(int(grain)), org=(x_center,y_center),fontFace=2, fontScale=0.2, color=(255,255,255), thickness=1)
+print(out)
 print("Flood method done")
-  
+
 
 io.imsave("../ml_sets/" + prefix + ".png",flooded_grains) 
 
+#%%  
 # PART 2 - SLICE METHOD
    
 
@@ -486,8 +472,8 @@ print("Running Slice method")
 width = int(max([max(df.x_end),max(df.x_start)]))+1
 height = int(max([max(df.y_end),max(df.y_start)]))+1
 
-N = width//4
-M = height//4
+N = width//8
+M = height//8
 
 
 
