@@ -17,6 +17,7 @@ from IPython.display import set_matplotlib_formats
 plt.rcParams['figure.dpi'] = 400
 plt.rcParams['savefig.dpi'] = 400
 import wield_input as wield
+from main2 import find_voids_2
 
 
 # In[6]:
@@ -87,6 +88,30 @@ print("ETL in Dataframe sucessfully done")
 #plt.figure()
 io.imsave("../ml_sets/"+file+"_energy.png",np_img)
 #plt.show()
+
+prefix = file
+suffix = "energy"
+N = width//8
+M = height//8
+
+grey_img = cv2.imread("../data/"+ prefix + '.jpg', 0)
+grey_img = cv2.resize(grey_img,(width,height),interpolation = cv2.INTER_AREA)
+
+tiles = [np_img[x:x+M,y:y+N] for x in range(0,np_img.shape[0],M) for y in range(0,np_img.shape[1],N)]
+
+tiles_grey = [grey_img[x:x+M,y:y+N] for x in range(0,grey_img.shape[0],M) for y in range(0,grey_img.shape[1],N)]
+
+n_voids = []
+
+for idx in range(len(tiles)):
+    centers, radii, vheight, image, drawing = find_voids_2(tiles_grey[idx])
+    n_voids.append([idx,len(centers)])
+    io.imsave("../ml_sets/"+ prefix + '_'+ str(idx) + '_' + str(len(centers)) + suffix + '.png',tiles[idx])
+    # io.imsave("../ml_sets/"+ prefix + '_'+ str(idx) + '_' + str(len(centers)) + 'proof.png',tiles_grey[idx])
+
+#save n_voids as csv
+
+print("Divide et Vince Done "+ prefix)
 
 # In[44]:
 
