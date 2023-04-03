@@ -22,9 +22,11 @@ import wield_input as wield
 # In[6]:
 
 
-
+if __name__ == "__main__":
+    file = sys.argv[1]
+    
 folder = "../data/"
-file = "1_001"
+#file = "1_001"
 path = folder + file
 
 #%%
@@ -83,7 +85,7 @@ print("ETL in Dataframe sucessfully done")
 
 
 #plt.figure()
-io.imsave("gb.png",np_img)
+io.imsave("../ml_sets/"+file+"_energy.png",np_img)
 #plt.show()
 
 # In[44]:
